@@ -1,0 +1,82 @@
+{
+  "backend": "rule_based",
+  "results": [
+    {
+      "task_id": "easy_gdv",
+      "grade": 0.7,
+      "passed": true,
+      "total_reward": 0.6,
+      "steps": 8,
+      "terminal_reason": "patient_death",
+      "feedback": [
+        "Correct triage route: immediate_resuscitation",
+        "No disposition made",
+        "Key exams: 2/2 performed",
+        "Excellent efficiency: 8 steps",
+        "Patient deteriorated to critical level"
+      ],
+      "breakdown": {
+        "route_correctness": 0.3,
+        "disposition_correctness": 0.0,
+        "key_examinations": 0.2,
+        "efficiency": 0.15,
+        "patient_outcome": 0.0,
+        "harmful_action_penalty": 0.0,
+        "budget_adherence": 0.05
+      }
+    },
+    {
+      "task_id": "medium_hcm_cat",
+      "grade": 0.97,
+      "passed": true,
+      "total_reward": 2.63,
+      "steps": 11,
+      "terminal_reason": "disposition_made",
+      "feedback": [
+        "Correct triage route: urgent_stabilise",
+        "Correct disposition: admit_ward",
+        "Key exams: 3/3 performed",
+        "Excellent efficiency: 11 steps",
+        "Patient severely compromised \u2014 delayed intervention"
+      ],
+      "breakdown": {
+        "route_correctness": 0.3,
+        "disposition_correctness": 0.25,
+        "key_examinations": 0.2,
+        "efficiency": 0.15,
+        "patient_outcome": 0.02,
+        "harmful_action_penalty": 0.0,
+        "budget_adherence": 0.05
+      }
+    },
+    {
+      "task_id": "hard_polytrauma",
+      "grade": 0.7,
+      "passed": true,
+      "total_reward": 0.25,
+      "steps": 8,
+      "terminal_reason": "patient_death",
+      "feedback": [
+        "Correct triage route: immediate_resuscitation",
+        "No disposition made",
+        "Key exams: 3/3 performed",
+        "Excellent efficiency: 8 steps",
+        "Patient deteriorated to critical level"
+      ],
+      "breakdown": {
+        "route_correctness": 0.3,
+        "disposition_correctness": 0.0,
+        "key_examinations": 0.2,
+        "efficiency": 0.15,
+        "patient_outcome": 0.0,
+        "harmful_action_penalty": 0.0,
+        "budget_adherence": 0.05
+      }
+    }
+  ],
+  "summary": {
+    "easy_gdv": 0.7,
+    "medium_hcm_cat": 0.97,
+    "hard_polytrauma": 0.7
+  }
+}

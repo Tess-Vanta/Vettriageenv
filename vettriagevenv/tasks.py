@@ -5,7 +5,7 @@ Each task has a fixed seed, expected difficulty, and optimal policy notes.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -22,7 +22,6 @@ class TaskSpec:
     passing_threshold: float            # minimum score to "pass"
     max_steps: int
     notes: List[str] = field(default_factory=list)
-    extra_kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
 TASK_REGISTRY: Dict[str, TaskSpec] = {
@@ -108,9 +107,6 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
         optimal_disposition="admit_icu",
         passing_threshold=0.45,
         max_steps=60,
-        extra_kwargs={
-            "inject_seizure_at_step": 7,
-        },
         notes=[
             "Run thorax AND abdomen imaging urgently within first 5 steps",
             "Seizure at step 7: give diazepam/midazolam immediately",

@@ -463,8 +463,6 @@ def update_physiology(
 
     # 3. Recompute vitals from new severity
     sev_scale = new_severity / 0.5
-    if patient.species if hasattr(patient, "species") else "dog":
-        pass  # already set
 
     noise = lambda s: rng.gauss(0, s)
     new_hr = patient.heart_rate + (profile.hr_delta * 0.05 * sev_scale) + hr_mod + noise(1)

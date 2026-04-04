@@ -2,14 +2,15 @@
 Baseline inference script for VetTriageEnv.
 
 Runs a language model against all three benchmark tasks and reports scores.
-Reads OPENAI_API_KEY from environment variables.
+
+Supports two backends:
+  - OpenAI:    set OPENAI_API_KEY,    use --backend openai   (default)
+  - Anthropic: set ANTHROPIC_API_KEY, use --backend anthropic
 
 Usage:
-    python baseline.py
-    python baseline.py --model gpt-4o --task easy_gdv
-    python baseline.py --model gpt-4o --seed 42
-
-Produces reproducible baseline scores on all 3 tasks.
+    python baseline.py --backend anthropic --model claude-haiku-4-5-20251001
+    python baseline.py --backend openai    --model gpt-4o-mini
+    python baseline.py --task easy_gdv
 """
 from __future__ import annotations
 
@@ -19,14 +20,58 @@ import os
 import sys
 from typing import Optional
 
-try:
-    from openai import OpenAI
-except ImportError:
-    print("ERROR: openai package not installed. Run: pip install openai")
-    sys.exit(1)
-
 from vettriagevenv import VetTriageEnv, Action, list_tasks
 from vettriagevenv.tools import TOOL_DEFINITIONS
+
+
+def _make_client(backend: str):
+    """Create the appropriate LLM client."""
+    if backend == "anthropic":
+        try:
+            import anthropic
+        except ImportError:
+            print("ERROR: anthropic package not installed. Run: pip install anthropic")
+            sys.exit(1)
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("ERROR: ANTHROPIC_API_KEY not set in environment")
+            sys.exit(1)
+        return anthropic.Anthropic(api_key=api_key)
+    else:
+        try:
+            from openai import OpenAI
+        except ImportError:
+            print("ERROR: openai package not installed. Run: pip install openai")
+            sys.exit(1)
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            print("ERROR: OPENAI_API_KEY not set in environment")
+            sys.exit(1)
+        return OpenAI(api_key=api_key)
+
+
+def _call_llm(client, backend: str, model: str, messages: list) -> str:
+    """Call the LLM and return the raw string response."""
+    if backend == "anthropic":
+        # Anthropic uses system prompt separately
+        system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
+        user_msgs = [m for m in messages if m["role"] != "system"]
+        response = client.messages.create(
+            model=model,
+            max_tokens=500,
+            system=system_msg,
+            messages=user_msgs,
+        )
+        return response.content[0].text
+    else:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            max_tokens=500,
+            temperature=0.2,
+        )
+        return response.choices[0].message.content
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +141,8 @@ def build_tool_schemas() -> list:
 
 def run_agent_episode(
     env: VetTriageEnv,
-    client: OpenAI,
+    client,
+    backend: str,
     task_id: str,
     model: str,
     seed: Optional[int],
@@ -138,14 +184,7 @@ def run_agent_episode(
 
         # Get agent response
         try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                max_tokens=500,
-                temperature=0.2,
-            )
-            raw = response.choices[0].message.content
+            raw = _call_llm(client, backend, model, messages)
             action_dict = json.loads(raw)
         except json.JSONDecodeError as e:
             if verbose:
@@ -243,25 +282,27 @@ def _format_observation(obs) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="VetTriageEnv baseline inference")
-    parser.add_argument("--model", default="gpt-4o-mini", help="OpenAI model name")
+    parser.add_argument("--backend", default="openai", choices=["openai", "anthropic"],
+                        help="LLM backend to use")
+    parser.add_argument("--model", default=None,
+                        help="Model name (default: gpt-4o-mini for openai, claude-haiku-4-5-20251001 for anthropic)")
     parser.add_argument("--task", default=None, help="Specific task ID (or all if omitted)")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--runs", type=int, default=1, help="Runs per task")
     parser.add_argument("--quiet", action="store_true", help="Suppress step-level output")
     args = parser.parse_args()
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        print("ERROR: OPENAI_API_KEY not set in environment")
-        sys.exit(1)
+    # Default model per backend
+    if args.model is None:
+        args.model = "claude-sonnet-4-6" if args.backend == "anthropic" else "gpt-4o-mini"
 
-    client = OpenAI(api_key=api_key)
+    client = _make_client(args.backend)
     env = VetTriageEnv(max_total_steps=80)
 
     tasks_to_run = [args.task] if args.task else list_tasks()
     all_results = []
 
-    print(f"\nVetTriageEnv Baseline — model: {args.model}")
+    print(f"\nVetTriageEnv Baseline — backend: {args.backend} | model: {args.model}")
     print("=" * 60)
 
     for task_id in tasks_to_run:
@@ -272,7 +313,7 @@ def main():
         for run in range(args.runs):
             print(f"  Run {run + 1}/{args.runs}:")
             result = run_agent_episode(
-                env, client, task_id,
+                env, client, args.backend, task_id,
                 model=args.model,
                 seed=args.seed + run,
                 verbose=not args.quiet,

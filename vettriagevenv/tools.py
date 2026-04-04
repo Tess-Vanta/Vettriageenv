@@ -443,7 +443,7 @@ class ToolExecutor:
         all_labs = build_lab_results(
             DIAGNOSIS_PROFILES[patient.true_diagnosis],
             patient.severity,
-            "dog",  # species handled in generator
+            patient.true_diagnosis.split("_")[0] if "_" in patient.true_diagnosis else "dog",
             rng,
         )
         if panel == "full_panel":

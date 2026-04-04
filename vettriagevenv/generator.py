@@ -4,7 +4,7 @@ Procedural case generator for VetTriageEnv.
 from __future__ import annotations
 
 import random
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from .models import FullState, OwnerInternalState
 from .physiology import (
@@ -128,8 +128,8 @@ def generate_case(
     force_diagnosis: Optional[str] = None,
     force_species: Optional[str] = None,
     task_id: str = "random",
-) -> FullState:
-    """Generate a complete case and return the initial FullState."""
+) -> Tuple[FullState, Dict]:
+    """Generate a complete case and return (FullState, metadata dict)."""
     rng = random.Random(seed)
 
     # Species

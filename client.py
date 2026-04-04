@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-# Import the environment
 from vettriagevenv.env import VetTriageEnv
-from vettriagevenv.models import Action, Observation, State
+from vettriagevenv.models import Action, Observation
 
 
 class VetTriageClient:
@@ -24,47 +23,44 @@ class VetTriageClient:
         Initialize the client.
 
         Args:
-            task: The task to run (default: easy_gdv)
+            task: The task to run. One of: easy_gdv, medium_hcm_cat, hard_polytrauma
         """
-        self.env = VetTriageEnv(task=task)
-        self.state = None
+        self.env = VetTriageEnv()
+        self.task = task
 
-    def reset(self) -> State:
+    def reset(self, seed: Optional[int] = None) -> Observation:
         """
-        Reset the environment and return the initial state.
+        Reset the environment and return the initial observation.
+
+        Args:
+            seed: Optional random seed for reproducibility
 
         Returns:
-            The initial state
+            The initial observation
         """
-        self.state = self.env.reset()
-        return self.state
+        return self.env.reset(task_id=self.task, seed=seed)
 
-    def step(self, action: Action) -> tuple[Observation, float, bool, bool, Dict[str, Any]]:
+    def step(self, action: Action) -> tuple[Observation, float, bool, Dict[str, Any]]:
         """
         Take a step in the environment.
 
         Args:
-            action: The action to take
+            action: The action to take (Action with tool, parameters, reasoning)
 
         Returns:
-            observation, reward, terminated, truncated, info
+            observation, reward_value, done, info
         """
-        return self.env.step(action)
+        obs, reward, done, info = self.env.step(action)
+        return obs, reward.value, done, info
 
-    def render(self) -> str:
+    def state(self) -> dict:
         """
-        Render the current state.
+        Return the full internal state (ground truth, for logging/debugging).
 
         Returns:
-            String representation of the current state
+            Dict with internal_state, meta, action_log, cumulative_reward
         """
-        return self.env.render()
-
-    def close(self):
-        """
-        Close the environment.
-        """
-        self.env.close()
+        return self.env.state()
 
 
 # For OpenEnv compatibility
@@ -73,7 +69,7 @@ def create_client(**kwargs) -> VetTriageClient:
     Create a VetTriageClient instance.
 
     Args:
-        **kwargs: Arguments to pass to VetTriageClient
+        **kwargs: Arguments to pass to VetTriageClient (e.g. task="medium_hcm_cat")
 
     Returns:
         VetTriageClient instance

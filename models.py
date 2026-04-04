@@ -1,21 +1,24 @@
 """
-Typed Pydantic models for VetTriageEnv — OpenEnv spec compliance.
+OpenEnv compatibility module for VetTriageEnv models.
 
-Re-exports models from vettriagevenv.models for OpenEnv compatibility.
+This root-level `models.py` file is required by OpenEnv environment validation.
+It re-exports the core Pydantic models from the package implementation.
 """
 from __future__ import annotations
 
-# Re-export all models from the vettriagevenv package
-from vettriagevenv.models import *
+from vettriagevenv.models import *  # noqa: F401,F403
 
-# Ensure all classes are available at module level
 __all__ = [
     "CBCResult",
     "ChemistryResult",
     "BloodGasResult",
     "RadiographResult",
     "UltrasoundResult",
+    "VitalsSnapshot",
+    "AsyncJob",
     "Action",
     "Observation",
-    "State",
+    "Reward",
+    "PatientInternalState",
+    "OwnerInternalState",
 ]

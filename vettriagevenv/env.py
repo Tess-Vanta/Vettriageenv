@@ -384,9 +384,6 @@ class VetTriageEnv:
 
         if "owner_contacted" in updates:
             state.owner.contact_established = True
-            if updates.get("budget_disclosed"):
-                # Mark budget as known
-                pass  # already in owner state
 
         if "consent_update" in updates:
             for item in updates["consent_update"]:

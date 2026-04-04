@@ -7,10 +7,10 @@ base classes and exposes it via create_fastapi_app().
 from __future__ import annotations
 
 import warnings
-import random
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
-# Suppress the openenv_core deprecation warning
+# openenv_core is the legacy module name; openenv.core is the new one.
+# The deprecation warning is expected — suppressed intentionally.
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from openenv_core import (
@@ -23,14 +23,9 @@ with warnings.catch_warnings():
 
 from pydantic import Field
 
-# Import VetTriageEnv internals
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from vettriagevenv.env import VetTriageEnv as _VetTriageEnv
 from vettriagevenv.models import Action as _VetAction
-from vettriagevenv.tasks import TASK_REGISTRY, list_tasks
+from vettriagevenv.tasks import list_tasks
 
 
 # ---------------------------------------------------------------------------
