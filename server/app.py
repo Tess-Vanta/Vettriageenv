@@ -204,6 +204,11 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
         The action is a structured tool call. Each call costs one step.
         The patient's condition may deteriorate — act efficiently.
         """
+        # Auto-reset if no active session
+        if self._env._state is None:
+            logger.info("No active session, auto-resetting with easy_gdv")
+            self._env.reset(task_id=self._current_task_id or "easy_gdv", seed=42)
+
         try:
             vet_action = _VetAction(
                 tool=action.tool,
