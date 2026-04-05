@@ -17,5 +17,4 @@ COPY README.md .
 EXPOSE 7860
 
 # Start the FastAPI server
-ENV ENABLE_WEB_INTERFACE=true
 CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]

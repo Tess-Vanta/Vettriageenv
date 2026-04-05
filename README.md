@@ -5,7 +5,6 @@ colorFrom: blue
 colorTo: red
 sdk: docker
 pinned: false
-base_path: /web
 ---
 
 # VetTriageEnv
