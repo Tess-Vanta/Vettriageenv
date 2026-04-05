@@ -6,8 +6,13 @@ base classes and exposes it via create_fastapi_app().
 """
 from __future__ import annotations
 
+import logging
+import traceback
 import warnings
 from typing import Any, Dict, List, Optional
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # openenv_core is the legacy module name; openenv.core is the new one.
 # The deprecation warning is expected — suppressed intentionally.
@@ -158,7 +163,7 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
     Phases: triage → stabilisation → monitoring → disposition
     """
 
-    SUPPORTS_CONCURRENT_SESSIONS = True
+    SUPPORTS_CONCURRENT_SESSIONS = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -199,12 +204,21 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
         The action is a structured tool call. Each call costs one step.
         The patient's condition may deteriorate — act efficiently.
         """
-        vet_action = _VetAction(
-            tool=action.tool,
-            parameters=action.parameters,
-            reasoning=action.reasoning,
-        )
-        obs, reward, done, info = self._env.step(vet_action)
+        try:
+            vet_action = _VetAction(
+                tool=action.tool,
+                parameters=action.parameters,
+                reasoning=action.reasoning,
+            )
+        except Exception as e:
+            logger.error(f"Action construction failed: {e}\n{traceback.format_exc()}")
+            raise
+
+        try:
+            obs, reward, done, info = self._env.step(vet_action)
+        except Exception as e:
+            logger.error(f"Step failed: {e}\n{traceback.format_exc()}")
+            raise
         result = self._convert_obs(obs)
         result.reward = reward.value
         result.done = done
