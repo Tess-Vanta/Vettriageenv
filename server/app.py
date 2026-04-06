@@ -351,6 +351,29 @@ app = create_fastapi_app(
     observation_cls=VetTriageObservation,
 )
 
+# ---------------------------------------------------------------------------
+# Override /state: framework registers it with response_model=State (base class)
+# which strips our VetTriageState extra fields. Replace with a route that
+# returns the full state dict, using the shared singleton.
+# ---------------------------------------------------------------------------
+from fastapi import Response
+from fastapi.routing import APIRoute
+
+# Remove the framework's /state route so ours takes precedence
+app.router.routes = [r for r in app.router.routes if not (
+    isinstance(r, APIRoute) and r.path == "/state"
+)]
+
+
+@app.get("/state", tags=["State Management"], summary="Get current environment state")
+def get_full_state() -> dict:
+    """Return full internal state including true diagnosis and hidden ground truth."""
+    return _SHARED_VET_ENV.state() if _SHARED_VET_ENV._state is not None else {
+        "episode_id": None,
+        "step_count": 0,
+        "message": "No active episode. Call /reset first.",
+    }
+
 
 def main():
     """Entry point for 'server' script (required by openenv validate)."""
