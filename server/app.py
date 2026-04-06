@@ -124,6 +124,11 @@ class VetTriageObservation(BaseObservation):
     # Terminal
     terminal_reason: Optional[str] = Field(default=None)
 
+    # Episode grade (populated when done=True)
+    grade: Optional[float] = Field(default=None)
+    passed: Optional[bool] = Field(default=None)
+    grade_feedback: List[str] = Field(default_factory=list)
+
     # Task info
     task_id: str = Field(default="random")
     available_tasks: List[str] = Field(default_factory=list)
@@ -245,9 +250,11 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
             "info": {k: v for k, v in info.items() if k != "grade_breakdown"},
         }
         if done and "grade" in info:
+            result.grade = info["grade"]
+            result.passed = info["passed"]
+            result.grade_feedback = info.get("grade_feedback", [])
             result.metadata["grade"] = info["grade"]
             result.metadata["passed"] = info["passed"]
-            result.metadata["grade_feedback"] = info.get("grade_feedback", [])
             result.metadata["grade_breakdown"] = info.get("grade_breakdown", {})
         self._last_obs = result
         return result

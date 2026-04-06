@@ -199,9 +199,9 @@ def run_task(client: OpenAI, task_id: str) -> float:
                 done   = step_result.get("done", False)
 
                 if done:
-                    meta    = step_result.get("metadata", {})
-                    score   = float(meta.get("grade", 0.0))
-                    success = bool(meta.get("passed", False))
+                    # grade/passed are in observation (metadata is stripped by framework)
+                    score   = float(obs.get("grade") or 0.0)
+                    success = bool(obs.get("passed") or False)
 
             except Exception as e:
                 error = str(e)[:120]
