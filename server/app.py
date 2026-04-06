@@ -153,6 +153,13 @@ class VetTriageState(BaseState):
 # OpenEnv Environment implementation
 # ---------------------------------------------------------------------------
 
+# Module-level singleton: the framework creates a new VetTriageEnvironment()
+# instance for every HTTP request, so we share a single underlying _VetTriageEnv
+# across all instances to preserve state between reset/step/state calls.
+_SHARED_VET_ENV = _VetTriageEnv(max_total_steps=100)
+_SHARED_TASK_ID = "random"
+
+
 class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, VetTriageState]):
     """
     Veterinary triage RL environment implementing the OpenEnv interface.
@@ -167,8 +174,10 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._env = _VetTriageEnv(max_total_steps=100)
-        self._current_task_id = "random"
+        # All instances share the same underlying env (framework creates new
+        # instances per request, so module-level singleton preserves state).
+        self._env = _SHARED_VET_ENV
+        self._current_task_id = _SHARED_TASK_ID
         self._last_obs = None
 
     def reset(
@@ -186,6 +195,8 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
             task_id: One of 'easy_gdv', 'medium_hcm_cat', 'hard_polytrauma',
                      or 'random' for procedural generation.
         """
+        global _SHARED_TASK_ID
+        _SHARED_TASK_ID = task_id
         self._current_task_id = task_id
         obs = self._env.reset(task_id=task_id, seed=seed)
         result = self._convert_obs(obs)
@@ -204,10 +215,11 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
         The action is a structured tool call. Each call costs one step.
         The patient's condition may deteriorate — act efficiently.
         """
-        # Auto-reset if no active session
+        # Auto-reset if no active session (shared env may not have been reset yet)
         if self._env._state is None:
-            logger.info("No active session, auto-resetting with easy_gdv")
-            self._env.reset(task_id=self._current_task_id or "easy_gdv", seed=42)
+            task = _SHARED_TASK_ID or "easy_gdv"
+            logger.info(f"No active session, auto-resetting with {task}")
+            self._env.reset(task_id=task, seed=42)
 
         try:
             vet_action = _VetAction(
