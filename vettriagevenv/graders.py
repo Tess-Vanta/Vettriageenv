@@ -194,6 +194,32 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
         feedback.append(f"Severely over-examined: {total_steps} steps (budget: {step_budget})")
     breakdown["efficiency"] = eff_score
 
+    # --- 4b. Time-awareness (0–0.10) — reward early intervention ---
+    # Find the sim_time_hours when the first therapeutic action was taken.
+    # Therapeutic = IV, fluid, medication, oxygen, procedure (not exams or consults).
+    first_treat_time = _find_first_treatment_time(action_log, state)
+    sim_total = state.sim_time_hours
+    if first_treat_time is not None:
+        if first_treat_time <= 0.30:
+            time_score = 0.10
+            feedback.append(f"Rapid first treatment at T+{first_treat_time:.2f}h — excellent time-awareness")
+        elif first_treat_time <= 0.60:
+            time_score = 0.06
+            feedback.append(f"Adequate first treatment at T+{first_treat_time:.2f}h")
+        elif first_treat_time <= 1.0:
+            time_score = 0.02
+            feedback.append(f"Delayed first treatment at T+{first_treat_time:.2f}h — patient deteriorated while waiting")
+        else:
+            time_score = 0.0
+            feedback.append(
+                f"Critically late first treatment at T+{first_treat_time:.2f}h — "
+                f"waited too long for diagnostics"
+            )
+    else:
+        time_score = 0.0
+        feedback.append("No therapeutic intervention performed")
+    breakdown["time_awareness"] = time_score
+
     # --- 5. Patient outcome (0–0.10) ---
     final_severity = state.patient.severity
     if final_severity < 0.45:
@@ -362,6 +388,21 @@ def compute_step_reward(
     elif severity >= 0.50:
         components["time_penalty"] = -0.05
 
+    # --- Time-delay penalty: non-therapeutic actions while patient is deteriorating ---
+    # Penalise "waiting" actions (consults, owner calls) when SpO2 < 90 and no treatment yet
+    spo2 = state_before.patient.spo2
+    if spo2 < 90 and tool in ("contact_owner", "consult_specialist", "run_bloodwork", "run_imaging"):
+        # Only penalise if no therapeutic action has been taken yet
+        has_treated = any(
+            isinstance(e, dict) and e.get("tool", "") in THERAPEUTIC_TOOLS
+            for e in action_log[:-1]
+        )
+        if not has_treated:
+            components["waiting_while_hypoxic"] = -0.20
+            messages.append(
+                f"SpO2 {spo2:.0f}% — ordering tests/consulting instead of treating"
+            )
+
     # --- Budget overspend penalty ---
     if state_before.owner.budget_limit:
         spent = state_after.owner.budget_spent
@@ -383,6 +424,31 @@ def compute_step_reward(
     total = sum(components.values())
     msg = "; ".join(messages) if messages else "Step completed"
     return round(total, 3), components, msg
+
+
+THERAPEUTIC_TOOLS = {
+    "place_iv_access", "administer_fluid_bolus", "give_medication",
+    "oxygen_therapy", "perform_procedure",
+}
+
+
+def _find_first_treatment_time(action_log: list, state) -> Optional[float]:
+    """Find sim_time_hours when the first therapeutic action was taken.
+
+    Walks the action_history strings from FullState to find the first
+    therapeutic tool, then estimates sim_time from the step index.
+    Falls back to scanning action_log dicts.
+    """
+    from .tools import ACTION_TIME_HOURS
+    # Scan action_log (list of dicts with 'tool' key) and accumulate time
+    cumulative_time = 0.0
+    for entry in action_log:
+        if isinstance(entry, dict):
+            tool = entry.get("tool", "")
+            cumulative_time += ACTION_TIME_HOURS.get(tool, 0.083)
+            if tool in THERAPEUTIC_TOOLS:
+                return round(cumulative_time, 3)
+    return None
 
 
 def _is_repeat_action(tool: str, params: dict, prior_log: list) -> bool:

@@ -59,15 +59,18 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # ------------------------------------------------------------------
     "medium_hcm_cat": TaskSpec(
         task_id="medium_hcm_cat",
-        name="The Dyspnoeic Cat — HCM with Pleural Effusion",
+        name="The Dyspnoeic Cat — Wait vs. Treat Dilemma",
         difficulty="medium",
         description=(
-            "An older Maine Coon cat presents with acute dyspnoea. The differential includes "
-            "hypertrophic cardiomyopathy (HCM) with pleural effusion, feline asthma, and "
-            "anaemia-related respiratory distress. The agent must reason through the differential, "
-            "select examinations that distinguish between these, and avoid the dangerous mistake "
-            "of giving crystalloid fluids to a cardiac patient. Owner has a moderate budget (£800). "
-            "Thoracocentesis is the key therapeutic intervention."
+            "An older Maine Coon cat presents with acute dyspnoea. SpO2 is 82% and dropping. "
+            "The differential includes hypertrophic cardiomyopathy (HCM) with pleural effusion, "
+            "feline asthma, and anaemia. The TIME-DELAY DILEMMA: ordering routine bloodwork "
+            "takes 2h and routine imaging 1.5h — during which the cat's SpO2 continues to fall. "
+            "An agent that waits for perfect diagnostics will watch the patient suffocate. "
+            "The correct strategy: TREAT FIRST (oxygen + furosemide + thoracocentesis based on "
+            "clinical signs), then confirm with STAT imaging — not the other way around. "
+            "Crystalloid fluids are lethal in HCM. Owner has moderate budget (£800). "
+            "Grading explicitly penalises high sim_time_hours at first treatment."
         ),
         seed=137,
         force_diagnosis="hypertrophic_cardiomyopathy",
@@ -77,11 +80,13 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
         passing_threshold=0.55,
         max_steps=45,
         notes=[
-            "Radiograph thorax is diagnostic — pleural effusion immediately visible",
-            "Crystalloid bolus in HCM cat causes pulmonary oedema — major penalty",
+            "TIME PRESSURE: SpO2 starts ~85%, drops ~2%/step. Cat dies below SpO2 60%.",
+            "WRONG: run_bloodwork(routine) -> run_imaging(routine) -> wait -> treat (2h+ lost)",
+            "RIGHT: oxygen_therapy -> physical_exam thorax -> furosemide -> thoracocentesis -> STAT imaging",
+            "Grader rewards: first_treatment_before T+0.30h, penalises treatment after T+1.0h",
+            "Crystalloid bolus in HCM cat causes pulmonary oedema — harmful action penalty",
             "Thoracocentesis dramatically improves respiratory status",
-            "Contact owner early for consent and budget discussion",
-            "Furosemide is appropriate first-line for CHF/HCM",
+            "STAT imaging (30min) is much faster than routine (90min) — worth the extra cost",
         ],
     ),
 
