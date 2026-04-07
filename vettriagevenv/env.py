@@ -17,7 +17,7 @@ from .models import (
 )
 from .physiology import DIAGNOSIS_PROFILES, update_physiology
 from .generator import generate_case
-from .tools import ToolExecutor, get_available_tools, TOOL_DEFINITIONS
+from .tools import ToolExecutor, get_available_tools, TOOL_DEFINITIONS, ACTION_TIME_HOURS
 from .graders import grade_episode, compute_step_reward
 from .tasks import TASK_REGISTRY, get_task
 
@@ -145,8 +145,12 @@ class VetTriageEnv:
         state_before = copy.deepcopy(state)
         action_dict = {"tool": action.tool, "params": action.parameters}
 
+        # --- Advance simulated clock ---
+        elapsed_hours = ACTION_TIME_HOURS.get(action.tool, 0.083)
+        state.sim_time_hours = round(state.sim_time_hours + elapsed_hours, 4)
+
         obs_updates, phys_effects, cost, tool_msg = self._tool_executor.execute(
-            action, state, self._rng
+            action, state, self._rng, sim_time_hours=state.sim_time_hours
         )
 
         # --- Apply financial cost ---
@@ -162,21 +166,26 @@ class VetTriageEnv:
         # --- Queue treatment effects ---
         self._treatment_effects_pending.extend(phys_effects)
 
-        # --- Update physiology ---
+        # --- Update physiology (scaled by elapsed simulated time) ---
         if profile:
             state.patient = update_physiology(
-                state.patient, profile, self._treatment_effects_pending, self._rng
+                state.patient, profile, self._treatment_effects_pending,
+                self._rng, elapsed_hours=elapsed_hours,
             )
             self._treatment_effects_pending = []
 
-        # --- Advance async jobs ---
+        # --- Advance async jobs (keep step counter for display, but readiness is time-based) ---
         events = []
         for job_id, job in list(state.pending_async.items()):
             if job.eta_steps > 0:
                 new_eta = job.eta_steps - 1
                 state.pending_async[job_id] = job.model_copy(update={"eta_steps": new_eta})
-                if new_eta <= 0:
-                    events.append(f"Result ready: {job.panel_or_modality} — call collect_result(job_id='{job_id}')")
+            # Time-based ready notification
+            if state.sim_time_hours >= job.eta_hours and job.eta_hours > 0:
+                events.append(
+                    f"Result ready: {job.panel_or_modality} — "
+                    f"call collect_result(job_id='{job_id}')"
+                )
 
         # --- Fire scheduled events ---
         events.extend(self._check_events(state, meta))
@@ -281,6 +290,7 @@ class VetTriageEnv:
                 tool=job.tool,
                 panel_or_modality=job.panel_or_modality,
                 eta_steps=job.eta_steps,
+                eta_hours=job.eta_hours,
                 cost_incurred=job.cost_incurred,
             )
             for job_id, job in state.pending_async.items()
@@ -328,6 +338,7 @@ class VetTriageEnv:
             phase=state.phase,
             phase_step=state.phase_step,
             phase_step_limit=self._phase_limits.get(state.phase, 20),
+            sim_time_hours=round(state.sim_time_hours, 3),
             episode_done=False,
             species=meta.get("species", "unknown"),
             breed=meta.get("breed_name", "unknown"),
@@ -393,13 +404,16 @@ class VetTriageEnv:
         if "pending_new" in updates:
             p = updates["pending_new"]
             job_id = p["job_id"]
-            state.pending_async[job_id] = AsyncJob(
-                job_id=job_id,
-                tool=p["tool"],
-                panel_or_modality=p["panel"],
-                eta_steps=p["eta_steps"],
-                cost_incurred=0.0,
-            )
+            # Only create if not already in pending_async (tools.py may have set it with eta_hours)
+            if job_id not in state.pending_async:
+                state.pending_async[job_id] = AsyncJob(
+                    job_id=job_id,
+                    tool=p["tool"],
+                    panel_or_modality=p["panel"],
+                    eta_steps=p["eta_steps"],
+                    eta_hours=p.get("eta_hours", 0.0),
+                    cost_incurred=0.0,
+                )
 
     def _check_events(self, state: FullState, meta: dict) -> list:
         """Check and fire scheduled mid-episode events."""

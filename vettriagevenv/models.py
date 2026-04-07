@@ -74,7 +74,8 @@ class AsyncJob(BaseModel):
     job_id: str
     tool: str
     panel_or_modality: str
-    eta_steps: int              # steps remaining until result ready
+    eta_steps: int              # kept for backward compat (approx steps)
+    eta_hours: float = 0.0     # absolute sim clock time when result is ready
     cost_incurred: float
 
 
@@ -142,6 +143,9 @@ class Observation(BaseModel):
 
     # Available tools this step
     available_tools: List[str] = Field(default_factory=list)
+
+    # Simulated time clock (hours elapsed since case start)
+    sim_time_hours: float = 0.0
 
     # Terminal info
     terminal_reason: Optional[str] = None
@@ -223,3 +227,4 @@ class FullState(BaseModel):
     seizure_fired: bool = False
     specialist_opinion: Optional[str] = None
     task_id: str = "random"
+    sim_time_hours: float = 0.0  # simulated clock: hours elapsed since case start

@@ -440,12 +440,20 @@ def update_physiology(
     profile: DiagnosisProfile,
     treatment_effects: list,
     rng: random.Random,
+    elapsed_hours: float = 0.083,  # default ~5 min per step if not specified
 ) -> PatientInternalState:
-    """Advance patient state by one step."""
-    # 1. Natural deterioration
-    new_severity = patient.severity + patient.deterioration_rate
+    """
+    Advance patient physiology by elapsed_hours of simulated time.
+
+    Deterioration is proportional to time elapsed — ordering routine bloodwork
+    (2h wait) causes 40x more deterioration than a quick exam (3 min).
+    This is the "wait vs. treat" dilemma core mechanic.
+    """
+    # 1. Natural deterioration scaled by elapsed time
+    # deterioration_rate is in severity units per hour
+    new_severity = patient.severity + patient.deterioration_rate * elapsed_hours
     if profile.accelerating:
-        new_rate = patient.deterioration_rate * profile.acceleration_factor
+        new_rate = patient.deterioration_rate * (profile.acceleration_factor ** elapsed_hours)
     else:
         new_rate = patient.deterioration_rate
 
@@ -461,14 +469,16 @@ def update_physiology(
 
     new_severity = max(0.0, new_severity)
 
-    # 3. Recompute vitals from new severity
+    # 3. Recompute vitals from new severity (drift also scaled by elapsed time)
     sev_scale = new_severity / 0.5
+    time_scale = elapsed_hours / 0.083  # relative to 5-min baseline step
 
-    noise = lambda s: rng.gauss(0, s)
-    new_hr = patient.heart_rate + (profile.hr_delta * 0.05 * sev_scale) + hr_mod + noise(1)
-    new_rr = patient.respiratory_rate + (profile.rr_delta * 0.05 * sev_scale) + rr_mod + noise(0.5)
-    new_spo2 = patient.spo2 + (profile.spo2_delta * 0.05 * sev_scale) + spo2_mod + noise(0.3)
-    new_bp = patient.systolic_bp + (profile.bp_delta * 0.05 * sev_scale) + bp_mod + noise(2)
+    noise = lambda s: rng.gauss(0, s * min(time_scale, 2.0))
+    drift = 0.05 * sev_scale * time_scale
+    new_hr = patient.heart_rate + (profile.hr_delta * drift) + hr_mod + noise(1)
+    new_rr = patient.respiratory_rate + (profile.rr_delta * drift) + rr_mod + noise(0.5)
+    new_spo2 = patient.spo2 + (profile.spo2_delta * drift) + spo2_mod + noise(0.3)
+    new_bp = patient.systolic_bp + (profile.bp_delta * drift) + bp_mod + noise(2)
 
     new_hr = max(20, new_hr)
     new_rr = max(5, new_rr)

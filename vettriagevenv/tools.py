@@ -291,9 +291,35 @@ TOOL_DEFINITIONS = {
 
 # Cost maps
 BLOODWORK_COSTS = {"cbc": 45, "chemistry": 80, "blood_gas": 60, "lactate": 35, "full_panel": 160}
-BLOODWORK_ETA = {"stat": 1, "urgent": 2, "routine": 4}
+BLOODWORK_ETA = {"stat": 1, "urgent": 2, "routine": 4}          # kept for approx step display
 IMAGING_COSTS = {"radiograph": 90, "ultrasound": 130}
 IMAGING_ETA = {"urgent": 2, "routine": 4}
+
+# ---------------------------------------------------------------------------
+# Simulated time cost per action (hours)
+# These advance the in-episode clock, causing disease progression.
+# "Wait vs. treat" dilemma: ordering routine tests burns hours while patient deteriorates.
+# ---------------------------------------------------------------------------
+ACTION_TIME_HOURS: Dict[str, float] = {
+    "check_vitals":          0.05,   # 3 min — fast bedside assessment
+    "physical_exam":         0.10,   # 6 min — hands-on exam
+    "run_bloodwork":         0.05,   # 3 min to submit (result ETA separate)
+    "run_imaging":           0.05,   # 3 min to submit (result ETA separate)
+    "collect_result":        0.05,   # 3 min — walk to lab, collect report
+    "place_iv_access":       0.10,   # 6 min — catheter placement
+    "administer_fluid_bolus":0.10,   # 6 min — set up and run bolus
+    "give_medication":       0.05,   # 3 min
+    "oxygen_therapy":        0.05,   # 3 min
+    "perform_procedure":     0.50,   # 30 min — meaningful time cost
+    "contact_owner":         0.15,   # 9 min — phone call
+    "consult_specialist":    0.25,   # 15 min — phone consult
+    "decide_triage_route":   0.0,
+    "make_disposition":      0.0,
+}
+
+# Diagnostic result availability windows (hours from time of ordering)
+BLOODWORK_ETA_HOURS = {"stat": 0.5, "urgent": 1.0, "routine": 2.0}
+IMAGING_ETA_HOURS   = {"urgent": 0.5, "routine": 1.5}
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +334,7 @@ class ToolExecutor:
         action: Action,
         state: FullState,
         rng,
+        sim_time_hours: float = 0.0,
     ) -> Tuple[Dict[str, Any], List[Dict], float, str]:
         """
         Returns (observation_updates, physiology_effects, cost, message).
@@ -329,13 +356,13 @@ class ToolExecutor:
             return self._physical_exam(params, patient, profile)
 
         elif tool == "run_bloodwork":
-            return self._run_bloodwork(params, patient, owner, state, rng)
+            return self._run_bloodwork(params, patient, owner, state, rng, sim_time_hours)
 
         elif tool == "run_imaging":
-            return self._run_imaging(params, patient, owner, state, rng)
+            return self._run_imaging(params, patient, owner, state, rng, sim_time_hours)
 
         elif tool == "collect_result":
-            return self._collect_result(params, state)
+            return self._collect_result(params, state, sim_time_hours)
 
         elif tool == "place_iv_access":
             return self._place_iv(params, patient, owner)
@@ -432,11 +459,13 @@ class ToolExecutor:
             "physical_exam_findings": {region: finding_prefix + finding}
         }, effects, 0.0, f"Physical exam [{region}, {depth}]: {finding_prefix + finding}"
 
-    def _run_bloodwork(self, params, patient, owner, state, rng):
+    def _run_bloodwork(self, params, patient, owner, state, rng, sim_time_hours=0.0):
         panel = params.get("panel", "cbc")
         priority = params.get("priority", "urgent")
         cost = BLOODWORK_COSTS.get(panel, 60.0)
-        eta = BLOODWORK_ETA.get(priority, 2)
+        eta_steps = BLOODWORK_ETA.get(priority, 2)
+        eta_hours = BLOODWORK_ETA_HOURS.get(priority, 1.0)
+        ready_at = sim_time_hours + eta_hours
         job_id = f"lab_{panel}_{uuid.uuid4().hex[:6]}"
 
         # Pre-generate result but don't reveal yet
@@ -460,22 +489,30 @@ class ToolExecutor:
             job_id=job_id,
             tool="run_bloodwork",
             panel_or_modality=panel,
-            eta_steps=eta,
+            eta_steps=eta_steps,
+            eta_hours=ready_at,
             cost_incurred=cost,
         )
         state.async_results[job_id] = {"type": "lab", "panel": panel, "data": result}
 
+        eta_min = int(eta_hours * 60)
         return {
             "pending_new": {"job_id": job_id, "tool": "run_bloodwork",
-                            "panel": panel, "eta_steps": eta}
-        }, [], cost, f"Bloodwork ordered: {panel} ({priority}). ETA: {eta} step(s). Cost: £{cost:.0f}"
+                            "panel": panel, "eta_steps": eta_steps,
+                            "eta_hours": ready_at}
+        }, [], cost, (
+            f"Bloodwork ordered: {panel} ({priority}). "
+            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: £{cost:.0f}"
+        )
 
-    def _run_imaging(self, params, patient, owner, state, rng):
+    def _run_imaging(self, params, patient, owner, state, rng, sim_time_hours=0.0):
         modality = params.get("modality", "radiograph")
         region = params.get("region", "abdomen")
         priority = params.get("priority", "urgent")
         cost = IMAGING_COSTS.get(modality, 90.0)
-        eta = IMAGING_ETA.get(priority, 2)
+        eta_steps = IMAGING_ETA.get(priority, 2)
+        eta_hours = IMAGING_ETA_HOURS.get(priority, 0.5)
+        ready_at = sim_time_hours + eta_hours
         job_id = f"img_{modality}_{region}_{uuid.uuid4().hex[:6]}"
 
         all_imaging = build_imaging_results(
@@ -494,24 +531,37 @@ class ToolExecutor:
             job_id=job_id,
             tool="run_imaging",
             panel_or_modality=f"{modality}_{region}",
-            eta_steps=eta,
+            eta_steps=eta_steps,
+            eta_hours=ready_at,
             cost_incurred=cost,
         )
         state.async_results[job_id] = {"type": "imaging", "key": key, "data": result}
 
+        eta_min = int(eta_hours * 60)
         return {
             "pending_new": {"job_id": job_id, "tool": "run_imaging",
-                            "panel": f"{modality}_{region}", "eta_steps": eta}
-        }, [], cost, f"Imaging ordered: {modality} {region} ({priority}). ETA: {eta} step(s). Cost: £{cost:.0f}"
+                            "panel": f"{modality}_{region}", "eta_steps": eta_steps,
+                            "eta_hours": ready_at}
+        }, [], cost, (
+            f"Imaging ordered: {modality} {region} ({priority}). "
+            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: £{cost:.0f}"
+        )
 
-    def _collect_result(self, params, state):
+    def _collect_result(self, params, state, sim_time_hours=0.0):
         job_id = params.get("job_id", "")
         if job_id not in state.pending_async:
             return {}, [], 0.0, f"No pending job with ID: {job_id}"
 
         job = state.pending_async[job_id]
-        if job.eta_steps > 0:
-            return {}, [], 0.0, f"Result not ready yet. {job.eta_steps} step(s) remaining."
+
+        # Time-based readiness check
+        if sim_time_hours < job.eta_hours:
+            wait_min = int((job.eta_hours - sim_time_hours) * 60)
+            return {}, [], 0.0, (
+                f"Result not ready. Ready at T+{job.eta_hours:.1f}h — "
+                f"~{wait_min} min remaining. Current time: T+{sim_time_hours:.2f}h. "
+                f"Consider treating now rather than waiting."
+            )
 
         # Result is ready
         result_data = state.async_results.pop(job_id, {})
