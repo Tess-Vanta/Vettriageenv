@@ -78,11 +78,11 @@ DIAGNOSIS_PROFILES: Dict[str, DiagnosisProfile] = {
         name="hypertrophic_cardiomyopathy",
         display_name="Hypertrophic Cardiomyopathy (HCM)",
         species=["cat"],
-        base_deterioration=0.04,
+        base_deterioration=0.08,           # aggressive: ~0.08 severity/hour
         accelerating=True,
-        acceleration_factor=1.03,
+        acceleration_factor=1.06,          # accelerates fast — time is oxygen
         lethal_threshold=0.85,
-        initial_severity_range=(0.25, 0.50),
+        initial_severity_range=(0.35, 0.55),  # starts sicker — urgency clear
         hr_delta=+60, rr_delta=+18, temp_delta=-0.5, spo2_delta=-8,
         bp_delta=-10, mm_color="pale", pain_level=3,
         thorax_finding="muffled heart sounds; dull percussion ventrally",
