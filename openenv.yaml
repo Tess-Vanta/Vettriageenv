@@ -1,0 +1,13 @@
+spec_version: 1
+name: vettriagevenv
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+version: "1.0.0"
+description: >
+  Veterinary triage RL environment. An AI agent gathers clinical information
+  via structured tool calls and makes correct triage decisions for procedurally-generated
+  animal patients (dogs and cats). Features: deteriorating patient physiology,
+  async diagnostic results, owner budget constraints, mid-episode events (seizures,
+  shift handoffs), and multi-phase episodes (triage → stabilisation → monitoring → disposition).
