@@ -8,7 +8,7 @@ Supports two backends:
   - Anthropic: set ANTHROPIC_API_KEY, use --backend anthropic
 
 Usage:
-    python baseline.py --backend anthropic --model claude-haiku-4-5-20251001
+    python baseline.py --backend anthropic --model meta-llama/Llama-3.3-70B-Instruct
     python baseline.py --backend openai    --model gpt-4o-mini
     python baseline.py --task easy_gdv
 """
@@ -285,7 +285,7 @@ def main():
     parser.add_argument("--backend", default="openai", choices=["openai", "anthropic"],
                         help="LLM backend to use")
     parser.add_argument("--model", default=None,
-                        help="Model name (default: gpt-4o-mini for openai, claude-haiku-4-5-20251001 for anthropic)")
+                        help="Model name (default: gpt-4o-mini for openai, meta-llama/Llama-3.3-70B-Instruct for anthropic)")
     parser.add_argument("--task", default=None, help="Specific task ID (or all if omitted)")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--runs", type=int, default=1, help="Runs per task")
@@ -294,7 +294,7 @@ def main():
 
     # Default model per backend
     if args.model is None:
-        args.model = "claude-sonnet-4-6" if args.backend == "anthropic" else "gpt-4o-mini"
+        args.model = "meta-llama/Llama-3.3-70B-Instruct" if args.backend == "anthropic" else "gpt-4o-mini"
 
     client = _make_client(args.backend)
     env = VetTriageEnv(max_total_steps=80)
