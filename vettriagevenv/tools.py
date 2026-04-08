@@ -122,7 +122,7 @@ TOOL_DEFINITIONS = {
     "place_iv_access": {
         "description": "Place intravenous catheter for fluid/drug administration.",
         "phase_availability": ["triage", "stabilisation"],
-        "financial_cost": 20.0,
+        "financial_cost": 2000.0,
         "async_eta": None,
         "parameters": {
             "site": {
@@ -137,7 +137,7 @@ TOOL_DEFINITIONS = {
     "administer_fluid_bolus": {
         "description": "Administer IV fluid bolus. Affects cardiovascular physiology.",
         "phase_availability": ["stabilisation"],
-        "financial_cost": 35.0,
+        "financial_cost": 3500.0,
         "async_eta": None,
         "parameters": {
             "fluid_type": {
@@ -159,7 +159,7 @@ TOOL_DEFINITIONS = {
     "give_medication": {
         "description": "Administer a medication.",
         "phase_availability": ["stabilisation", "monitoring"],
-        "financial_cost": 25.0,
+        "financial_cost": 2500.0,
         "async_eta": None,
         "parameters": {
             "drug": {
@@ -181,7 +181,7 @@ TOOL_DEFINITIONS = {
     "oxygen_therapy": {
         "description": "Provide supplemental oxygen.",
         "phase_availability": ["triage", "stabilisation", "monitoring"],
-        "financial_cost": 15.0,
+        "financial_cost": 1500.0,
         "async_eta": None,
         "parameters": {
             "method": {
@@ -195,7 +195,7 @@ TOOL_DEFINITIONS = {
     "perform_procedure": {
         "description": "Perform a clinical procedure.",
         "phase_availability": ["stabilisation"],
-        "financial_cost": 120.0,
+        "financial_cost": 12000.0,
         "async_eta": None,
         "parameters": {
             "procedure": {
@@ -227,7 +227,7 @@ TOOL_DEFINITIONS = {
     "consult_specialist": {
         "description": "Phone a specialist for advice.",
         "phase_availability": ["triage", "stabilisation", "monitoring", "disposition"],
-        "financial_cost": 50.0,
+        "financial_cost": 5000.0,
         "async_eta": None,
         "parameters": {
             "specialty": {
@@ -290,9 +290,9 @@ TOOL_DEFINITIONS = {
 
 
 # Cost maps
-BLOODWORK_COSTS = {"cbc": 45, "chemistry": 80, "blood_gas": 60, "lactate": 35, "full_panel": 160}
+BLOODWORK_COSTS = {"cbc": 4500, "chemistry": 8000, "blood_gas": 6000, "lactate": 3500, "full_panel": 16000}
 BLOODWORK_ETA = {"stat": 1, "urgent": 2, "routine": 4}          # kept for approx step display
-IMAGING_COSTS = {"radiograph": 90, "ultrasound": 130}
+IMAGING_COSTS = {"radiograph": 9000, "ultrasound": 13000}
 IMAGING_ETA = {"urgent": 2, "routine": 4}
 
 # ---------------------------------------------------------------------------
@@ -502,7 +502,7 @@ class ToolExecutor:
                             "eta_hours": ready_at}
         }, [], cost, (
             f"Bloodwork ordered: {panel} ({priority}). "
-            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: £{cost:.0f}"
+            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: ₹{cost:.0f}"
         )
 
     def _run_imaging(self, params, patient, owner, state, rng, sim_time_hours=0.0):
@@ -544,7 +544,7 @@ class ToolExecutor:
                             "eta_hours": ready_at}
         }, [], cost, (
             f"Imaging ordered: {modality} {region} ({priority}). "
-            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: £{cost:.0f}"
+            f"Ready in ~{eta_min} min (at T+{ready_at:.1f}h). Cost: ₹{cost:.0f}"
         )
 
     def _collect_result(self, params, state, sim_time_hours=0.0):
@@ -586,7 +586,7 @@ class ToolExecutor:
         if patient.iv_access:
             return {}, [], 0.0, "IV access already in place."
         site = params.get("site", "cephalic")
-        return {"iv_placed": True}, [{"hr": +5}], 20.0, f"IV catheter placed: {site} vein. Access secured."
+        return {"iv_placed": True}, [{"hr": +5}], 2000.0, f"IV catheter placed: {site} vein. Access secured."
 
     def _fluid_bolus(self, params, patient, owner):
         if not patient.iv_access:
@@ -616,7 +616,7 @@ class ToolExecutor:
             effects.append({"hr": -12, "bp": +10, "spo2": +3, "severity_delta": -0.06})
             msg_parts.append("→ oxygen-carrying capacity improved")
 
-        return {}, effects, 35.0, "; ".join(msg_parts)
+        return {}, effects, 3500.0, "; ".join(msg_parts)
 
     def _give_medication(self, params, patient, owner):
         drug = params.get("drug", "butorphanol")
@@ -645,7 +645,7 @@ class ToolExecutor:
             effects.append({"hr": +30, "bp": +40, "severity_delta": -0.05})
             msg += " → vasopressor effect"
 
-        return {}, effects, 25.0, msg
+        return {}, effects, 2500.0, msg
 
     def _oxygen_therapy(self, params, patient, owner):
         method = params.get("method", "flow_by")
@@ -655,7 +655,7 @@ class ToolExecutor:
         fio2 = fio2_map.get(method, 0.30)
         spo2_gain = (fio2 - 0.21) * 30
         effects.append({"spo2": +spo2_gain, "rr": -2})
-        return {}, effects, 15.0, f"Oxygen via {method} (FiO2 ~{fio2:.0%}) → SpO2 improvement expected"
+        return {}, effects, 1500.0, f"Oxygen via {method} (FiO2 ~{fio2:.0%}) → SpO2 improvement expected"
 
     def _perform_procedure(self, params, patient, owner, profile):
         proc = params.get("procedure", "wound_care")
@@ -685,7 +685,7 @@ class ToolExecutor:
             effects.append({"hr": +40, "bp": +30, "severity_delta": -0.10})
             msg += " → CPR in progress"
 
-        return {}, effects, 120.0, msg
+        return {}, effects, 12000.0, msg
 
     def _contact_owner(self, params, patient, owner):
         purpose = params.get("purpose", "history")
@@ -694,7 +694,7 @@ class ToolExecutor:
 
         if purpose == "budget":
             updates["budget_disclosed"] = True
-            msg_parts.append(f"Owner budget limit: £{owner.budget_limit:.0f}")
+            msg_parts.append(f"Owner budget limit: ₹{owner.budget_limit:.0f}")
         elif purpose == "consent":
             updates["consent_update"] = ["fluid_therapy", "medication", "procedures"]
             msg_parts.append("Consent obtained for: fluid therapy, medication, procedures")
@@ -744,7 +744,7 @@ class ToolExecutor:
             ),
         }
         opinion = opinions.get(specialty, f"Specialist advice re: {diag_name}: supportive care, monitor closely.")
-        return {"specialist_opinion": opinion}, [], 50.0, f"Specialist ({specialty}) consulted: {opinion}"
+        return {"specialist_opinion": opinion}, [], 5000.0, f"Specialist ({specialty}) consulted: {opinion}"
 
 
 def get_available_tools(phase: str, patient: PatientInternalState, owner: OwnerInternalState) -> List[str]:

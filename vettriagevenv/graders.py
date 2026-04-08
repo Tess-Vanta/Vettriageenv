@@ -256,18 +256,18 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
     elif budget_spent > budget_limit:
         overspend = budget_spent - budget_limit
         breakdown["budget_efficiency"] = 0.0
-        feedback.append(f"OVER BUDGET: spent £{budget_spent:.0f} of £{budget_limit:.0f} limit (overspend £{overspend:.0f})")
+        feedback.append(f"OVER BUDGET: spent ₹{budget_spent:.0f} of ₹{budget_limit:.0f} limit (overspend ₹{overspend:.0f})")
     else:
         utilisation = budget_spent / budget_limit
         if utilisation <= 0.60:
             budget_score = 0.10
-            feedback.append(f"Excellent budget efficiency: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+            feedback.append(f"Excellent budget efficiency: spent ₹{budget_spent:.0f} of ₹{budget_limit:.0f} ({utilisation:.0%})")
         elif utilisation <= 0.85:
             budget_score = 0.06
-            feedback.append(f"Good budget management: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+            feedback.append(f"Good budget management: spent ₹{budget_spent:.0f} of ₹{budget_limit:.0f} ({utilisation:.0%})")
         elif utilisation <= 1.0:
             budget_score = 0.03
-            feedback.append(f"Near budget limit: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+            feedback.append(f"Near budget limit: spent ₹{budget_spent:.0f} of ₹{budget_limit:.0f} ({utilisation:.0%})")
         else:
             budget_score = 0.0
         breakdown["budget_efficiency"] = budget_score
@@ -427,12 +427,12 @@ def compute_step_reward(
         limit = state_before.owner.budget_limit
         if spent > limit:
             overage = spent - limit
-            components["budget_penalty"] = -min(0.4, overage / 300)
-            messages.append(f"Over budget by £{overage:.0f}")
-        elif limit - spent < 50 and limit < 600:
+            components["budget_penalty"] = -min(0.4, overage / 30000)
+            messages.append(f"Over budget by ₹{overage:.0f}")
+        elif limit - spent < 5000 and limit < 60000:
             # Near budget on a tight-budget task — warn
             components["near_budget_warning"] = -0.02
-            messages.append(f"Budget nearly exhausted: £{spent:.0f}/£{limit:.0f}")
+            messages.append(f"Budget nearly exhausted: ₹{spent:.0f}/₹{limit:.0f}")
 
     # --- Dangerous action penalty ---
     harmful = HARMFUL_ACTIONS.get(diag, [])
