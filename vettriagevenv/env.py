@@ -158,14 +158,14 @@ class VetTriageEnv:
             remaining = state.owner.budget_limit - state.owner.budget_spent
             if remaining <= 0:
                 obs = self._build_observation(events=[
-                    f"BUDGET EXHAUSTED: £{state.owner.budget_spent:.0f} spent of £{state.owner.budget_limit:.0f} limit. "
-                    f"'{action.tool}' costs £{cost:.0f} — cannot proceed. "
+                    f"BUDGET EXHAUSTED: ₹{state.owner.budget_spent:.0f} spent of ₹{state.owner.budget_limit:.0f} limit. "
+                    f"'{action.tool}' costs ₹{cost:.0f} — cannot proceed. "
                     "Only free actions (check_vitals, physical_exam, decide_triage_route, make_disposition) are available."
                 ])
                 reward = Reward(
                     value=-0.25,
                     components={"budget_exceeded": -0.25},
-                    message=f"Over budget — {action.tool} blocked (£{cost:.0f})",
+                    message=f"Over budget — {action.tool} blocked (₹{cost:.0f})",
                 )
                 state.step += 1
                 state.phase_step += 1
@@ -350,7 +350,7 @@ class VetTriageEnv:
                 "--- SHIFT HANDOFF: prior history summarised ---",
                 f"Patient arrived with: {meta.get('presenting_complaint', '')[:100]}",
                 f"Current phase: {state.phase}",
-                f"Budget spent: £{owner.budget_spent:.0f}",
+                f"Budget spent: ₹{owner.budget_spent:.0f}",
             ] + state.action_history[-3:]
 
         return Observation(
@@ -478,13 +478,13 @@ class VetTriageEnv:
                     state.owner.budget_limit = max(0, state.owner.budget_limit + delta)
                     if delta < 0:
                         events.append(
-                            f"EVENT: Owner has revised budget down by £{abs(delta):.0f}. "
-                            f"New limit: £{state.owner.budget_limit:.0f}. Reprioritise examinations."
+                            f"EVENT: Owner has revised budget down by ₹{abs(delta):.0f}. "
+                            f"New limit: ₹{state.owner.budget_limit:.0f}. Reprioritise examinations."
                         )
                     else:
                         events.append(
-                            f"EVENT: Owner has increased budget by £{delta:.0f}. "
-                            f"New limit: £{state.owner.budget_limit:.0f}."
+                            f"EVENT: Owner has increased budget by ₹{delta:.0f}. "
+                            f"New limit: ₹{state.owner.budget_limit:.0f}."
                         )
 
         # Check for spontaneous deterioration events

@@ -211,17 +211,17 @@ def generate_case(
 
     # Owner — budget set per task
     TASK_BUDGETS = {
-        "hard_imha_budget": 380.0,   # resource scarcity showcase — brute-force costs £635+
-        "hard_polytrauma":  600.0,
-        "easy_gdv":         None,    # no budget constraint
-        "medium_hcm_cat":   800.0,
+        "hard_imha_budget": 38000.0,   # resource scarcity showcase — brute-force costs ₹63,500+
+        "hard_polytrauma":  60000.0,
+        "easy_gdv":         None,      # no budget constraint
+        "medium_hcm_cat":   80000.0,
     }
     if task_id in TASK_BUDGETS:
         budget = TASK_BUDGETS[task_id]
     elif difficulty == "hard":
-        budget = float(rng.choice([400, 600, 800]))
+        budget = float(rng.choice([40000, 60000, 80000]))
     else:
-        budget = float(rng.choice([500, 800, 1200, 2000, 3000, 5000]))
+        budget = float(rng.choice([50000, 80000, 120000, 200000, 300000, 500000]))
 
     # Budget change events (random, not on fixed-budget tasks)
     if task_id in TASK_BUDGETS:

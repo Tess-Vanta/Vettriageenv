@@ -69,7 +69,7 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
             "An agent that waits for perfect diagnostics will watch the patient suffocate. "
             "The correct strategy: TREAT FIRST (oxygen + furosemide + thoracocentesis based on "
             "clinical signs), then confirm with STAT imaging — not the other way around. "
-            "Crystalloid fluids are lethal in HCM. Owner has moderate budget (£800). "
+            "Crystalloid fluids are lethal in HCM. Owner has moderate budget (₹80,000). "
             "Grading explicitly penalises high sim_time_hours at first treatment."
         ),
         seed=137,
@@ -95,18 +95,18 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # ------------------------------------------------------------------
     "hard_imha_budget": TaskSpec(
         task_id="hard_imha_budget",
-        name="The Budget Crisis — IMHA with £380 Limit",
+        name="The Budget Crisis — IMHA with ₹38,000 Limit",
         difficulty="hard",
         description=(
             "A 5-year-old Cocker Spaniel presents with progressive weakness, pale/icteric "
             "mucous membranes, and collapse. The differential includes immune-mediated haemolytic "
             "anaemia (IMHA), internal haemorrhage, and hepatic failure. "
-            "THE RESOURCE SCARCITY DILEMMA: The owner reveals a hard budget of £380. "
-            "A brute-force agent running all diagnostics costs £635+. "
-            "The agent must choose: CBC (£45, confirms IMHA) OR chemistry (£80) OR imaging (£90-130) — "
-            "not all three. The correct strategy: CBC + lactate (£80 total) is sufficient to confirm "
+            "THE RESOURCE SCARCITY DILEMMA: The owner reveals a hard budget of ₹38,000. "
+            "A brute-force agent running all diagnostics costs ₹63,500+. "
+            "The agent must choose: CBC (₹4,500) OR chemistry (₹8,000) OR imaging (₹9,000-13,000) — "
+            "not all three. The correct strategy: CBC + lactate (₹8,000 total) is sufficient to confirm "
             "IMHA and guide treatment. Imaging and full chemistry are wasteful here. "
-            "Any agent that runs full_panel (£160) + ultrasound (£130) + bloodwork + procedures "
+            "Any agent that runs full_panel (₹16,000) + ultrasound (₹13,000) + bloodwork + procedures "
             "will exceed budget and be blocked from administering critical treatments. "
             "Contact owner FIRST to discover the budget before ordering anything."
         ),
@@ -118,11 +118,11 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
         passing_threshold=0.50,
         max_steps=40,
         notes=[
-            "BUDGET: £380 hard limit — contact_owner first to learn this",
-            "WRONG: full_panel(£160) + ultrasound(£130) + procedures = BLOCKED at £380",
-            "RIGHT: cbc(£45) + lactate(£35) = £80 confirms IMHA, leaves £300 for treatment",
+            "BUDGET: ₹38,000 hard limit — contact_owner first to learn this",
+            "WRONG: full_panel(₹16,000) + ultrasound(₹13,000) + procedures = BLOCKED at ₹38,000",
+            "RIGHT: cbc(₹4,500) + lactate(₹3,500) = ₹8,000 confirms IMHA, leaves ₹30,000 for treatment",
             "Haemic murmur + icteric MMs + tachycardia = IMHA without any bloodwork",
-            "Blood products (£35) + immunosuppression (give_medication) are key treatments",
+            "Blood products (₹3,500) + immunosuppression (give_medication) are key treatments",
             "Crystalloid fluids are NOT harmful here (unlike HCM) but wasteful on budget",
             "Grader scores: budget_efficiency is 15% of total score on this task",
         ],
@@ -138,7 +138,7 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
         description=(
             "A young dog has been hit by a car. The agent must manage polytrauma including "
             "suspected pneumothorax, haemoabdomen, and possible spinal injury — all simultaneously. "
-            "A seizure occurs mid-examination at step 7. Owner has a tight budget (£600). "
+            "A seizure occurs mid-examination at step 7. Owner has a tight budget (₹60,000). "
             "Crystalloid bolus is relatively contraindicated (haemoabdomen). "
             "Thoracocentesis for pneumothorax is urgent — delay beyond step 12 causes rapid deterioration. "
             "The agent must prioritise imaging over comprehensive bloodwork given the budget."
@@ -155,7 +155,7 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
             "Seizure at step 7: give diazepam/midazolam immediately",
             "Thoracocentesis required before step 12 or patient deteriorates rapidly",
             "Colloid preferred over crystalloid for haemoabdomen",
-            "Budget of £600 forces prioritisation: imaging > full bloodwork",
+            "Budget of ₹60,000 forces prioritisation: imaging > full bloodwork",
             "Avoid thorough spinal exam without sedation — risk of cord injury",
         ],
     ),
