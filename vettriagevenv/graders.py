@@ -148,7 +148,8 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
 
     # --- 2. Disposition correctness (0–0.25) ---
     disposition = state.disposition_made
-    correct_disps = CORRECT_DISPOSITIONS.get(diag, ["admit_ward"])
+    # Tasks can override the correct disposition list (e.g. nosocomial task wants discharge, not admit)
+    correct_disps = meta.get("correct_dispositions_override") or CORRECT_DISPOSITIONS.get(diag, ["admit_ward"])
 
     if disposition in correct_disps:
         disp_score = 0.25
@@ -285,6 +286,14 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
         else:
             budget_score = 0.0
         breakdown["budget_efficiency"] = budget_score
+
+    # --- Nosocomial hazard score (0–0.10, or −0.15 penalty if infection acquired) ---
+    # Only scored on tasks with nosocomial_enabled=True.
+    # Rewards agents that discharge before the infection window widens.
+    # Penalises agents that accumulate unnecessary clinic hours.
+    if meta.get("nosocomial_enabled", False):
+        nosocomial_score = _score_nosocomial_hazard(state, feedback)
+        breakdown["nosocomial_hazard"] = nosocomial_score
 
     total = sum(breakdown.values())
     total = max(0.0, min(1.0, total))
@@ -568,6 +577,61 @@ def _is_repeat_action(tool: str, params: dict, prior_log: list) -> bool:
             if entry.get("tool") == tool and entry.get("params") == params:
                 return True
     return False
+
+
+def _score_nosocomial_hazard(state: FullState, feedback: list) -> float:
+    """
+    Score 0.0–0.10 based on how quickly the agent discharged the patient.
+    A −0.15 penalty applies if a hospital-acquired infection was acquired.
+
+    The mechanic:
+      - Every 24 simulated hours in the clinic, probability of infection escalates:
+          Day 1 (0–24h):  10%
+          Day 2 (24–48h): 25%
+          Day 3 (48–72h): 50%
+          Day 4+ (72h+):  75%
+      - Agents that linger in monitoring loops trigger these rolls and risk the penalty.
+      - Agents that assess quickly and discharge early earn the full reward.
+
+    Scoring:
+      infection_acquired = True   → −0.15 (overrides all below)
+      total_clinic_hours < 24h    → +0.10 (excellent: discharged inside safe window)
+      total_clinic_hours < 36h    → +0.07 (good: borderline day 2 exposure)
+      total_clinic_hours < 48h    → +0.03 (marginal: exposure window active)
+      total_clinic_hours ≥ 48h    →  0.00 (extended stay — infection risk was high)
+    """
+    if state.patient.nosocomial_infection_acquired:
+        feedback.append(
+            f"NOSOCOMIAL PENALTY: Hospital-acquired infection developed at "
+            f"T+{state.sim_time_hours:.1f}h — discharge was delayed too long"
+        )
+        return -0.15
+
+    hours = state.sim_time_hours
+    if hours < 24:
+        feedback.append(
+            f"Nosocomial hazard avoided: discharged at T+{hours:.1f}h "
+            f"(within 24h safe window — no infection roll triggered)"
+        )
+        return 0.10
+    elif hours < 36:
+        feedback.append(
+            f"Nosocomial hazard: discharged at T+{hours:.1f}h "
+            f"(day 2 window was active — 25% roll was pending)"
+        )
+        return 0.07
+    elif hours < 48:
+        feedback.append(
+            f"Nosocomial hazard: discharged at T+{hours:.1f}h "
+            f"(significant exposure — day 2 roll already triggered)"
+        )
+        return 0.03
+    else:
+        feedback.append(
+            f"Nosocomial hazard: {hours:.1f}h total clinic time — "
+            f"extended stay created high infection exposure (day {int(hours/24)+1})"
+        )
+        return 0.00
 
 
 def _get_exam_target(tool: str, params: dict) -> str:

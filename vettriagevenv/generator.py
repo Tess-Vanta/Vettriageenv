@@ -77,6 +77,17 @@ PRESENTING_COMPLAINTS = {
         "Owner reports marked increase in resting respiratory rate over past 48 hours. "
         "{age}-year-old {breed}, regular cardiac medications at home.",
     ],
+    # Ward-phase presenting complaint used by the nosocomial task
+    "congestive_heart_failure_ward": [
+        "{name} was admitted 20 hours ago following acute decompensated congestive heart failure. "
+        "Initial presentation: severe dyspnoea (SpO2 72%), bilateral pulmonary oedema, HR 175bpm. "
+        "Treatment to date: furosemide IV 2mg/kg q6h, oxygen therapy, cage rest. "
+        "Current status: SpO2 improved to 95%, HR 128bpm, RR 28. Patient has an indwelling "
+        "cephalic IV catheter (placed 19h ago). Owner present. "
+        "WARD REVIEW TASK: Assess stability and determine readiness for discharge. "
+        "{name} is a {age}-year-old {breed}. "
+        "NOSOCOMIAL HAZARD ACTIVE: Risk of hospital-acquired infection escalates every 24h in clinic.",
+    ],
     "diabetic_ketoacidosis": [
         "{name} has been vomiting and is markedly lethargic for 24 hours. "
         "Known diabetic, owner reports insulin administration has been inconsistent. "
@@ -212,6 +223,25 @@ def generate_case(
         # Highly stressed, uncooperative dog — dramatically increases stochastic failure rates
         patient = patient.model_copy(update={"cooperation_score": 0.4, "pain_amplifier": 1.5})
 
+    if task_id == "hard_nosocomial_chf_ward":
+        # Patient already 20h post-admission and partially stabilised.
+        # Vitals reflect successful initial treatment: oedema receding, SpO2 recovering.
+        # Severity is reduced but not resolved — enough residual disease to tempt over-monitoring.
+        patient = patient.model_copy(update={
+            "severity": 0.32,
+            "heart_rate": 128.0,
+            "respiratory_rate": 28.0,
+            "spo2": 95.0,
+            "temperature": 38.6,
+            "systolic_bp": 118.0,
+            "mucous_membrane_color": "pale pink",
+            "capillary_refill_time": 2.0,
+            "mentation": "alert",
+            "pain_score": 2,
+            "iv_access": True,            # catheter placed at admission 19h ago
+            "fluid_type_active": "none",  # diuresis finished
+        })
+
     # Owner — budget set per task
     TASK_BUDGETS = {
         "hard_imha_budget":              38000.0,   # resource scarcity showcase — brute-force costs ₹63,500+
@@ -219,6 +249,7 @@ def generate_case(
         "hard_stochastic_pancreatitis":  70000.0,   # sufficient, but failures drain budget if not adapted
         "easy_gdv":                      None,      # no budget constraint
         "medium_hcm_cat":                80000.0,
+        "hard_nosocomial_chf_ward":      55000.0,   # nosocomial task — residual budget after 20h of prior treatment
     }
     if task_id in TASK_BUDGETS:
         budget = TASK_BUDGETS[task_id]
@@ -246,7 +277,9 @@ def generate_case(
     )
 
     # Generate presenting complaint
-    templates = PRESENTING_COMPLAINTS.get(diagnosis_key, [
+    # Nosocomial task uses a ward-phase complaint that reflects 20h prior admission
+    complaint_key = "congestive_heart_failure_ward" if task_id == "hard_nosocomial_chf_ward" else diagnosis_key
+    templates = PRESENTING_COMPLAINTS.get(complaint_key, [
         f"{breed_name} presented with signs consistent with {profile.display_name}. "
         f"{age:.1f}-year-old {sex_display}."
     ])
@@ -278,13 +311,24 @@ def generate_case(
             "delta": owner.budget_change_delta,
         })
 
+    # Nosocomial task: patient already 20h into admission — start in monitoring phase
+    # with triage already decided and sim clock pre-advanced.
+    if task_id == "hard_nosocomial_chf_ward":
+        initial_phase = "monitoring"
+        initial_triage_route = "urgent_stabilise"
+        initial_sim_time = 20.0   # 20 simulated hours already elapsed in clinic
+    else:
+        initial_phase = "triage"
+        initial_triage_route = None
+        initial_sim_time = 0.0
+
     return FullState(
         patient=patient,
         owner=owner,
         step=0,
-        phase="triage",
+        phase=initial_phase,
         phase_step=0,
-        triage_route_decided=None,
+        triage_route_decided=initial_triage_route,
         disposition_made=None,
         pending_async={},
         async_results={},
@@ -295,7 +339,7 @@ def generate_case(
         seizure_fired=False,
         specialist_opinion=None,
         task_id=task_id,
-        # Extra fields stored as task metadata
+        sim_time_hours=initial_sim_time,
     ), {
         "species": species,
         "breed_name": breed_name,
@@ -308,4 +352,10 @@ def generate_case(
         "events_scheduled": events_scheduled,
         "difficulty": difficulty,
         "animal_name": name,
+        # Nosocomial hazard opt-in flag — enables infection rolls and grading
+        "nosocomial_enabled": task_id == "hard_nosocomial_chf_ward",
+        # Disposition override: nosocomial task rewards early discharge, not ICU admit
+        "correct_dispositions_override": (
+            ["discharge_with_medication"] if task_id == "hard_nosocomial_chf_ward" else None
+        ),
     }

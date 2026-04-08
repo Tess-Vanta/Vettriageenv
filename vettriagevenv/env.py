@@ -47,7 +47,7 @@ class VetTriageEnv:
     metadata = {
         "name": "VetTriageEnv",
         "version": "1.0.0",
-        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_imha_budget", "hard_polytrauma", "hard_stochastic_pancreatitis"],
+        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_imha_budget", "hard_polytrauma", "hard_stochastic_pancreatitis", "hard_nosocomial_chf_ward"],
         "reward_range": (-5.0, 5.0),
     }
 
@@ -349,6 +349,26 @@ class VetTriageEnv:
                 "spo2": "stable" if patient.spo2 > 94 else "declining",
                 "mentation": patient.mentation,
             }
+            # Nosocomial risk indicator — visible to agent during monitoring phase
+            if meta.get("nosocomial_enabled", False):
+                hours = state.sim_time_hours
+                if patient.nosocomial_infection_acquired:
+                    monitoring_trends["nosocomial_risk"] = (
+                        "ACTIVE INFECTION — hospital-acquired sepsis in progress"
+                    )
+                elif hours < 24:
+                    window_remaining = round(24.0 - hours, 1)
+                    monitoring_trends["nosocomial_risk"] = (
+                        f"low — {window_remaining}h remaining in safe discharge window (day 1, 10% roll at 24h)"
+                    )
+                elif hours < 48:
+                    monitoring_trends["nosocomial_risk"] = (
+                        f"moderate — day 2 exposure active (25% infection roll pending at 48h); discharge urgently"
+                    )
+                else:
+                    monitoring_trends["nosocomial_risk"] = (
+                        f"HIGH — day {int(hours/24)+1} exposure; next roll ≥50%; immediate discharge required"
+                    )
         elif state.phase == "disposition":
             disposition_opts = [
                 "admit_icu", "admit_ward", "refer_specialist",
@@ -507,6 +527,36 @@ class VetTriageEnv:
                 "ALERT: Patient entering critical condition. "
                 f"Severity {state.patient.severity:.2f}. Immediate intervention required."
             )
+
+        # --- Nosocomial hazard: escalating infection probability per 24h in clinic ---
+        # Rolls once per 24-hour window. Probabilities: 10% day 1, 25% day 2, 50% day 3, 75% day 4+.
+        # Only active for tasks that have opted in via nosocomial_enabled meta flag.
+        if meta.get("nosocomial_enabled", False) and not state.patient.nosocomial_infection_acquired:
+            current_day = int(state.sim_time_hours / 24)
+            while current_day > state.nosocomial_days_rolled:
+                day_num = state.nosocomial_days_rolled + 1
+                risks = [0.10, 0.25, 0.50, 0.75]
+                risk = risks[min(day_num - 1, len(risks) - 1)]
+                state.nosocomial_days_rolled += 1
+                if self._rng.random() < risk:
+                    new_hr = round(state.patient.heart_rate + 35, 1)
+                    new_temp = round(state.patient.temperature + 1.8, 1)
+                    new_sev = round(min(0.88, state.patient.severity + 0.20), 3)
+                    state.patient = state.patient.model_copy(update={
+                        "nosocomial_infection_acquired": True,
+                        "severity": new_sev,
+                        "temperature": new_temp,
+                        "heart_rate": new_hr,
+                    })
+                    events.append(
+                        f"NOSOCOMIAL ALERT — Day {day_num}: Patient has developed signs of "
+                        f"hospital-acquired infection. Temperature {new_temp}°C, "
+                        f"tachycardia {new_hr:.0f}bpm. Suspected source: indwelling IV catheter. "
+                        f"Start empirical antibiotics immediately (amoxicillin-clavulanate IV). "
+                        f"Severity escalated to {new_sev:.2f}. "
+                        f"Earlier discharge would have prevented this complication."
+                    )
+                    break  # stop after first infection fires
 
         return events
 

@@ -202,6 +202,47 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
             "Budget ₹70,000: don't waste on repeated failed procedures without adjusting approach",
         ],
     ),
+    # ------------------------------------------------------------------
+    # HARD: Nosocomial Hazard — lingering patient, escalating infection clock
+    # ------------------------------------------------------------------
+    "hard_nosocomial_chf_ward": TaskSpec(
+        task_id="hard_nosocomial_chf_ward",
+        name="The Lingering Patient — CHF Ward Stay with Infection Clock",
+        difficulty="hard",
+        description=(
+            "A 9-year-old Cavalier King Charles Spaniel with congestive heart failure (CHF) "
+            "was admitted 20 hours ago after acute decompensation (SpO2 72%, pulmonary oedema). "
+            "Initial stabilisation succeeded: furosemide IV diuresis, oxygen, cage rest. "
+            "Current status: SpO2 95%, HR 128bpm, RR 28 — partially stable. "
+            "An indwelling cephalic IV catheter has been in place for 19 hours. "
+            "THE NOSOCOMIAL DILEMMA: Every 24 hours in the clinic carries an escalating probability "
+            "of hospital-acquired infection from the indwelling catheter: 10% on day 1, 25% on day 2, "
+            "50% on day 3, 75% on day 4+. An agent that endlessly monitors — ordering repeat "
+            "bloodwork, waiting for 'one more set of vitals', running unnecessary consults — "
+            "will trigger these rolls and risk nosocomial sepsis. "
+            "The correct strategy: perform a targeted ward assessment (vitals, chest auscultation), "
+            "confirm stability, and DISCHARGE with oral medications before the 24h window expires. "
+            "Budget: ₹55,000 (residual after prior treatment costs). "
+            "Grading: nosocomial_hazard is 10% of score — penalises infection, rewards early discharge."
+        ),
+        seed=512,
+        force_diagnosis="congestive_heart_failure",
+        force_species="dog",
+        optimal_route="urgent_stabilise",
+        optimal_disposition="discharge_with_medication",
+        passing_threshold=0.50,
+        max_steps=40,
+        notes=[
+            "WARD PHASE: patient already stabilised — you start in monitoring phase at T+20h",
+            "INFECTION CLOCK: 4h remain in the 24h safe window at episode start",
+            "WRONG: check_vitals → run_bloodwork(routine) → run_imaging → consult_specialist → 'one more check' → infection fires at T+24h",
+            "RIGHT: check_vitals(cardiovascular+respiratory) → physical_exam(thorax) → make_disposition(discharge_with_medication)",
+            "Discharge medications: furosemide PO + pimobendan + enalapril",
+            "nosocomial_risk field in monitoring_trends shows remaining safe window — read it every step",
+            "Grader: nosocomial_hazard = +0.10 (discharge <24h), +0.07 (<36h), +0.03 (<48h), −0.15 (infection acquired)",
+            "Budget ₹55,000 — residual after admission; avoid wasteful repeat diagnostics",
+        ],
+    ),
 }
 
 

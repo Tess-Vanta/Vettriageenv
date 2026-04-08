@@ -215,6 +215,9 @@ class PatientInternalState(BaseModel):
     treatments_given: List[str] = Field(default_factory=list)
     fluid_type_active: Optional[str] = None
 
+    # Nosocomial hazard — hospital-acquired infection tracking
+    nosocomial_infection_acquired: bool = False
+
 
 class OwnerInternalState(BaseModel):
     budget_limit: Optional[float]
@@ -244,3 +247,6 @@ class FullState(BaseModel):
     specialist_opinion: Optional[str] = None
     task_id: str = "random"
     sim_time_hours: float = 0.0  # simulated clock: hours elapsed since case start
+
+    # Nosocomial hazard — how many 24h windows have already been rolled
+    nosocomial_days_rolled: int = 0
