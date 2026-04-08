@@ -27,3 +27,4 @@ Thumbs.db
 
 # HuggingFace space (separate repo)
 hf-space/
+.claude/
