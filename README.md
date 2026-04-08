@@ -288,25 +288,28 @@ curl http://localhost:7860/state
 
 ## Baseline Scores (rule-based, reproducible, no API key)
 
-```
+```bash
 python -X utf8 baseline_rulebased.py
 ```
 
-| Task | Grade | Pass |
-|---|---|---|
-| easy_gdv | 1.000 | ✅ |
-| medium_hcm_cat | 1.000 | ✅ |
-| hard_imha_budget | 1.000 | ✅ |
-| hard_polytrauma | 1.000 | ✅ |
-| hard_stochastic_pancreatitis | ~0.97 | ✅ |
+These use hand-crafted oracle policies — they represent the ceiling (what a perfect agent achieves). LLM agents score substantially lower on hard tasks.
 
-*LLM baselines (approximate, run `baseline.py` for exact scores):*
+| Task | Difficulty | Rule-based grade | LLM typical grade |
+|---|---|---|---|
+| easy_gdv | Easy | **1.000** | ~0.60–0.75 |
+| medium_hcm_cat | Medium | **1.000** | ~0.45–0.58 |
+| hard_imha_budget | Hard | **1.000** | ~0.20–0.45* |
+| hard_polytrauma | Hard | **1.000** | ~0.30–0.45 |
+| hard_stochastic_pancreatitis | Hard | **1.000** | ~0.35–0.55** |
+| hard_parvovirus_day1 | Hard | **1.000** | ~0.30–0.50*** |
+| hard_nosocomial_chf_ward | Hard | **1.000** | ~0.25–0.45**** |
 
-| Task | GPT-4o-mini | Claude Haiku |
-|---|---|---|
-| easy_gdv | ~0.65 | ~0.70 |
-| medium_hcm_cat | ~0.48 | ~0.52 |
-| hard_polytrauma | ~0.32 | ~0.38 |
+\* LLMs running full diagnostics exhaust the ₹38,000 budget before treatment  
+\*\* Open-loop LLMs score 0 on `stochastic_awareness` (never check `action_succeeded`)  
+\*\*\* LLMs trusting the false-negative SNAP result may discharge and receive 0 on `clinical_gestalt`  
+\*\*\*\* Over-cautious LLMs monitoring excessively trigger nosocomial infection penalty
+
+*Run `baseline.py` with an API key for exact LLM scores.*
 
 ---
 

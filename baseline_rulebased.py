@@ -151,12 +151,59 @@ def policy_hard_stochastic_pancreatitis_closed_loop() -> Iterator[dict]:
     yield {"tool": "make_disposition",     "parameters": {"decision": "admit_ward", "follow_up_hours": 24}}
 
 
+def policy_hard_parvovirus_day1() -> Iterator[dict]:
+    """
+    Parvovirus day-1 — SNAP test has 25% false-negative rate.
+    Optimal policy: treat empirically based on clinical signs, don't let a
+    negative SNAP derail the diagnosis.
+    If SNAP returns NEGATIVE, treat anyway (clinical_gestalt mechanic).
+    NOTE: This policy always gives treatment regardless of SNAP result,
+    demonstrating correct clinical_gestalt behaviour.
+    """
+    yield {"tool": "check_vitals",        "parameters": {"systems": ["cardiovascular", "respiratory"]}}
+    yield {"tool": "physical_exam",        "parameters": {"region": "abdomen", "depth": "quick"}}
+    yield {"tool": "contact_owner",        "parameters": {"purpose": "consent"}}
+    yield {"tool": "place_iv_access",      "parameters": {"site": "cephalic"}}
+    # Run CBC — leukopenia is pathognomonic and not a false negative
+    yield {"tool": "run_bloodwork",        "parameters": {"panel": "cbc", "priority": "urgent"}}
+    yield {"tool": "administer_fluid_bolus","parameters": {"fluid_type": "crystalloid",
+                                                            "dose_ml_kg": 10, "rate": "moderate"}}
+    yield {"tool": "give_medication",      "parameters": {"drug": "maropitant", "dose_mg_kg": 1.0, "route": "iv"}}
+    yield {"tool": "decide_triage_route",  "parameters": {"urgency": "urgent_stabilise",
+                                                           "primary_concern": "parvovirus — haemorrhagic diarrhoea, unvaccinated puppy"}}
+    # Give empirical antibiotics for bacterial translocation (correct parvo management)
+    yield {"tool": "give_medication",      "parameters": {"drug": "methadone", "dose_mg_kg": 0.1, "route": "iv"}}
+    yield {"tool": "make_disposition",     "parameters": {"decision": "admit_icu",
+                                                           "aftercare": "Isolation ward, barrier nursing, IV fluids, antiemetics"}}
+
+
+def policy_hard_nosocomial_chf_ward() -> Iterator[dict]:
+    """
+    CHF ward stay — nosocomial hazard clock.
+    Patient is already 20h post-admission, partially stabilised.
+    Infection risk: 10% at 24h, 25% at 48h, 50% at 72h.
+    Optimal policy: targeted assessment + discharge early on oral medications.
+    Avoid wasteful re-testing that burns simulated hours.
+    """
+    yield {"tool": "check_vitals",        "parameters": {"systems": ["cardiovascular", "respiratory"]}}
+    yield {"tool": "physical_exam",        "parameters": {"region": "thorax", "depth": "quick"}}
+    # Contact owner for discharge planning
+    yield {"tool": "contact_owner",        "parameters": {"purpose": "update"}}
+    # Discharge promptly on oral medications — patient is stable
+    yield {"tool": "make_disposition",     "parameters": {
+        "decision": "discharge_with_medication",
+        "aftercare": "furosemide 2mg/kg PO BID, pimobendan 0.25mg/kg BID, enalapril 0.5mg/kg BID; recheck 72h"
+    }}
+
+
 POLICIES = {
     "easy_gdv":                             policy_easy_gdv,
     "medium_hcm_cat":                       policy_medium_hcm_cat,
     "hard_imha_budget":                     policy_hard_imha_budget,
     "hard_polytrauma":                      policy_hard_polytrauma,
     "hard_stochastic_pancreatitis":         policy_hard_stochastic_pancreatitis_closed_loop,
+    "hard_parvovirus_day1":                 policy_hard_parvovirus_day1,
+    "hard_nosocomial_chf_ward":             policy_hard_nosocomial_chf_ward,
     # Open-loop variant for comparison — shows stochastic_awareness = 0.000
     "hard_stochastic_pancreatitis_open":    policy_hard_stochastic_pancreatitis_open_loop,
 }
