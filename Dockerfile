@@ -11,6 +11,7 @@ COPY vettriagevenv/ ./vettriagevenv/
 COPY server/ ./server/
 COPY openenv.yaml .
 COPY baseline.py .
+COPY baseline_rulebased.py .
 COPY README.md .
 
 # Expose port for HF Spaces
