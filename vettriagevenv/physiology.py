@@ -56,6 +56,9 @@ class DiagnosisProfile:
     gastric_dilation: bool = False
     pulmonary_pattern: Optional[str] = None   # "interstitial", "alveolar"
 
+    # Leukopenia flag — for parvovirus; drives low WBC in lab results
+    leukopenia: bool = False
+
 
 DIAGNOSIS_PROFILES: Dict[str, DiagnosisProfile] = {
     "gastric_dilatation_volvulus": DiagnosisProfile(
@@ -169,6 +172,25 @@ DIAGNOSIS_PROFILES: Dict[str, DiagnosisProfile] = {
         cardiac_finding="murmur grade V/VI; S3 gallop; jugular distension",
         lactate_high=False,
         pleural_effusion=True, pulmonary_pattern="alveolar",
+    ),
+    "parvovirus": DiagnosisProfile(
+        name="parvovirus",
+        display_name="Canine Parvoviral Enteritis",
+        species=["dog"],
+        base_deterioration=0.06,
+        accelerating=True,
+        acceleration_factor=1.04,
+        lethal_threshold=0.90,
+        initial_severity_range=(0.35, 0.60),
+        hr_delta=+40, rr_delta=+10, temp_delta=+1.5, spo2_delta=-3,
+        bp_delta=-25, mm_color="pale", pain_level=6,
+        abdomen_finding=(
+            "profuse haemorrhagic diarrhoea present; marked abdominal pain on palpation; "
+            "foul-smelling bloody stool visible on perineum"
+        ),
+        hematocrit_low=False,   # initially normal; dehydration raises PCV early
+        lactate_high=True,
+        leukopenia=True,        # hallmark: severe neutropenia from viral bone marrow suppression
     ),
     "diabetic_ketoacidosis": DiagnosisProfile(
         name="diabetic_ketoacidosis",
@@ -290,7 +312,10 @@ def build_lab_results(
     if profile.hematocrit_low:
         hematocrit = max(8.0, 30.0 - severity * 25 + rng.gauss(0, 2))
     wbc = 10.0 + rng.gauss(0, 1)
-    if severity > 0.5:
+    if profile.leukopenia:
+        # Parvovirus causes severe neutropenia via bone marrow suppression
+        wbc = max(0.5, 1.5 - severity * 1.0 + rng.gauss(0, 0.2))
+    elif severity > 0.5:
         wbc = 15.0 + rng.gauss(0, 2)  # stress leukogram
     platelets = 250.0 + rng.gauss(0, 20)
     tp = 6.5 + rng.gauss(0, 0.3)
@@ -302,7 +327,11 @@ def build_lab_results(
         interp_parts.append("severe anaemia")
     elif hematocrit < 30:
         interp_parts.append("moderate anaemia")
-    if wbc > 16:
+    if wbc < 2.0:
+        interp_parts.append("severe leukopenia — marked neutropenia; highly suspicious for parvovirus or bone marrow suppression")
+    elif wbc < 4.0:
+        interp_parts.append("leukopenia — neutropenia present")
+    elif wbc > 16:
         interp_parts.append("leukocytosis")
     results["cbc"] = CBCResult(
         hematocrit=round(hematocrit, 1),

@@ -203,6 +203,48 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
         ],
     ),
     # ------------------------------------------------------------------
+    # HARD: False Negative — sensitivity vs. specificity, clinical gestalt
+    # ------------------------------------------------------------------
+    "hard_parvovirus_day1": TaskSpec(
+        task_id="hard_parvovirus_day1",
+        name="The False Negative — Day-1 Parvo with Unreliable SNAP Test",
+        difficulty="hard",
+        description=(
+            "A 6-month-old unvaccinated mixed-breed puppy presents with 18 hours of profuse "
+            "haemorrhagic diarrhoea, repeated vomiting, and severe lethargy. Clinical signs: "
+            "HR 148bpm, BP 90mmHg, CRT 3s, obtunded mentation, pale mucous membranes — "
+            "the picture of septic shock. The diagnosis is clinically obvious: parvovirus. "
+            "THE FALSE-NEGATIVE TRAP: The Canine Parvovirus SNAP antigen test has only ~75% "
+            "sensitivity within the first 24h of symptom onset (viral antigen has not yet "
+            "reached the detection threshold). If the agent orders a SNAP test, there is a "
+            "25% chance the result returns 'NEGATIVE' — despite the hidden state being strongly "
+            "positive. An LLM that treats tool output as absolute truth will read 'NEGATIVE' "
+            "and stop looking for parvo. A real clinician ignores the test result when the "
+            "patient is dying in front of them: haemorrhagic diarrhoea + leukopenia + young "
+            "unvaccinated dog = treat for parvo regardless of what the SNAP says. "
+            "Grading explicitly rewards treating DESPITE the false negative (clinical_gestalt). "
+            "Budget: ₹45,000 (rescue dog, financially constrained owner)."
+        ),
+        seed=888,
+        force_diagnosis="parvovirus",
+        force_species="dog",
+        optimal_route="urgent_stabilise",
+        optimal_disposition="admit_icu",
+        passing_threshold=0.45,
+        max_steps=45,
+        notes=[
+            "SNAP test sensitivity: ~75% on symptom day 1 — 25% false-negative rate",
+            "WRONG: run_snap_test → result='NEGATIVE' → stop parvo workup → discharge → patient dies",
+            "RIGHT: clinical signs are pathognomonic → treat empirically → SNAP test is confirmatory only",
+            "ALSO RIGHT: run_snap_test → 'NEGATIVE' → recognise sensitivity limitation → treat anyway",
+            "KEY labs: CBC will show severe leukopenia (<2.0 x10^9/L) — pathognomonic, do not ignore",
+            "Treatment: IV fluids (crystalloid), maropitant (antiemetic), ampicillin (bacterial translocation), isolation",
+            "Grader: clinical_gestalt is 10% of score — +0.10 treats despite false negative, −0.15 if discharged",
+            "Budget ₹45,000: sufficient for core treatment; avoid unnecessary imaging",
+        ],
+    ),
+
+    # ------------------------------------------------------------------
     # HARD: Nosocomial Hazard — lingering patient, escalating infection clock
     # ------------------------------------------------------------------
     "hard_nosocomial_chf_ward": TaskSpec(

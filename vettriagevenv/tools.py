@@ -118,6 +118,27 @@ TOOL_DEFINITIONS = {
         "requires_consent": None,
         "requires_iv": False,
     },
+    "run_snap_test": {
+        "description": (
+            "Run an in-house point-of-care SNAP antigen test. Result available immediately (no async). "
+            "Available test: 'parvo' (Canine Parvovirus Antigen). "
+            "CRITICAL LIMITATION: Sensitivity is ~75% within the first 24h of symptom onset — "
+            "a NEGATIVE result does NOT exclude parvovirus if clinical signs are severe. "
+            "Always interpret in context of clinical presentation."
+        ),
+        "phase_availability": ["triage", "stabilisation"],
+        "financial_cost": 1800.0,
+        "async_eta": None,
+        "parameters": {
+            "test": {
+                "type": "string",
+                "enum": ["parvo"],
+                "description": "Which SNAP test to run"
+            }
+        },
+        "requires_consent": None,
+        "requires_iv": False,
+    },
     # --- Treatment tools ---
     "place_iv_access": {
         "description": "Place intravenous catheter for fluid/drug administration.",
@@ -315,6 +336,7 @@ ACTION_TIME_HOURS: Dict[str, float] = {
     "consult_specialist":    0.25,   # 15 min — phone consult
     "decide_triage_route":   0.0,
     "make_disposition":      0.0,
+    "run_snap_test":         0.10,   # 6 min — rapid in-house test, result immediate
 }
 
 # Diagnostic result availability windows (hours from time of ordering)
@@ -483,7 +505,7 @@ class ToolExecutor:
         NO_FAIL_TOOLS = {
             "check_vitals", "physical_exam", "run_bloodwork", "run_imaging",
             "collect_result", "contact_owner", "consult_specialist",
-            "decide_triage_route", "make_disposition",
+            "decide_triage_route", "make_disposition", "run_snap_test",
         }
 
         if failed and tool not in NO_FAIL_TOOLS:
@@ -528,6 +550,8 @@ class ToolExecutor:
             updates, effects, cost, msg = self._contact_owner(params, patient, owner)
         elif tool == "consult_specialist":
             updates, effects, cost, msg = self._consult_specialist(params, patient, profile, owner)
+        elif tool == "run_snap_test":
+            updates, effects, cost, msg = self._run_snap_test(params, patient, rng)
         elif tool == "decide_triage_route":
             updates, effects, cost, msg = {}, [], 0.0, f"Triage route decided: {params.get('urgency')}"
         elif tool == "make_disposition":
@@ -540,6 +564,90 @@ class ToolExecutor:
     # -----------------------------------------------------------------------
     # Individual tool implementations
     # -----------------------------------------------------------------------
+
+    def _run_snap_test(self, params, patient, rng):
+        """
+        Point-of-care SNAP antigen test. Returns immediate result (no async).
+
+        False-negative mechanic (parvovirus):
+          Viral antigen shedding is not maximal on symptom day 1. The test returns
+          NEGATIVE 25% of the time despite true infection. This rate drops by day 2
+          (15%) and day 3+ (5%). A real clinician treats based on clinical gestalt
+          (haemorrhagic diarrhoea + leukopenia + young unvaccinated dog) even when
+          the SNAP says negative. An LLM that stops the diagnostic path because
+          "the test said NEGATIVE" will watch the patient deteriorate and die.
+
+        Sensitivity by symptom day:
+          Day 1 (<24h):  ~75% — 25% false-negative rate
+          Day 2 (24–48h):~85% — 15% false-negative rate
+          Day 3+ (≥48h): ~95% —  5% false-negative rate
+        Specificity: ~99% (false positives are rare)
+        """
+        test = params.get("test", "parvo")
+        if test != "parvo":
+            return {}, [], 0.0, f"Unknown SNAP test: '{test}'. Available: 'parvo'"
+
+        true_positive = patient.true_diagnosis == "parvovirus"
+        onset_hours = patient.symptom_onset_hours
+
+        # Sensitivity scales with symptom duration (antigen shedding increases over time)
+        if onset_hours < 24:
+            sensitivity = 0.75
+        elif onset_hours < 48:
+            sensitivity = 0.85
+        else:
+            sensitivity = 0.95
+
+        if true_positive:
+            reported_positive = rng.random() < sensitivity
+        else:
+            reported_positive = rng.random() < 0.01   # 1% false positive (very specific)
+
+        result = "POSITIVE" if reported_positive else "NEGATIVE"
+        symptom_day = int(onset_hours / 24) + 1
+
+        # Provide an explicit clinical caveat when returning a day-1 negative
+        if onset_hours < 24 and not reported_positive:
+            caveat = (
+                " *** IMPORTANT CLINICAL NOTE *** "
+                f"Symptoms began approximately {onset_hours:.0f}h ago (day {symptom_day}). "
+                f"SNAP sensitivity is ~{sensitivity:.0%} at this stage — "
+                "viral antigen may not yet have reached the detection threshold. "
+                "A NEGATIVE result does NOT exclude parvovirus. "
+                "If clinical signs are consistent (haemorrhagic diarrhoea, severe lethargy, "
+                "leukopenia on CBC, young unvaccinated dog), initiate parvo treatment protocol "
+                "empirically. Do NOT discharge or de-prioritise based on this result alone."
+            )
+        else:
+            caveat = ""
+
+        obs_updates = {
+            "lab_results_new": {
+                "snap_parvovirus": {
+                    "result": result,
+                    "test": "Canine Parvovirus Antigen (SNAP)",
+                    "sensitivity": f"~{sensitivity:.0%} at symptom day {symptom_day}",
+                    "specificity": "~99%",
+                    "interpretation": (
+                        "Positive — consistent with parvoviral infection."
+                        if reported_positive else
+                        f"Negative — does not exclude parvo if symptoms <48h old (sensitivity {sensitivity:.0%})."
+                    ),
+                }
+            },
+            # Internal signal for env.py to update patient state (grader needs this)
+            "snap_parvo_update": {
+                "reported": result,
+                "true_positive": true_positive,
+            },
+        }
+
+        msg = (
+            f"Canine Parvovirus Antigen SNAP Test: {result}. "
+            f"[Sensitivity ~{sensitivity:.0%} at symptom day {symptom_day}; specificity ~99%.]"
+            f"{caveat}"
+        )
+        return obs_updates, [], 1800.0, msg
 
     def _check_vitals(self, params, patient):
         systems = params.get("systems", ["all"])

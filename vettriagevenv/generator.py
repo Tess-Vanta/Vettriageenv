@@ -60,6 +60,18 @@ PRESENTING_COMPLAINTS = {
         "Owner reports {pronoun} vomited 8 times since yesterday evening. "
         "{age}-year-old {breed}, history of dietary indiscretion.",
     ],
+    "parvovirus": [
+        "{name} has been vomiting and passing profuse bloody diarrhoea for approximately 18 hours. "
+        "Owner reports {pronoun} collapsed in the garden this morning and cannot stand unassisted. "
+        "{name} is a {age}-year-old unvaccinated {breed} puppy. No prior vaccination history. "
+        "Foul-smelling haemorrhagic faeces noted on perineum.",
+
+        "Young unvaccinated dog presented with acute haemorrhagic gastroenteritis: "
+        "bloody diarrhoea and vomiting of approximately 16 hours duration. "
+        "Owner reports severe lethargy — {pronoun} will not lift {pronoun_poss} head. "
+        "Other dogs in the neighbourhood reportedly have similar symptoms. "
+        "{age}-year-old {breed}. Vaccination status: none confirmed.",
+    ],
     "immune_haemolytic_anaemia": [
         "Owner reports {name} has been lethargic and off food for 3 days. "
         "Noticed yellowing of the whites of the eyes this morning. "
@@ -126,7 +138,8 @@ BREED_POOLS = {
 
 DIAGNOSIS_SPECIES_MAP = {
     "dog": ["gastric_dilatation_volvulus", "polytrauma_hbc", "pancreatitis_severe",
-            "immune_haemolytic_anaemia", "congestive_heart_failure", "diabetic_ketoacidosis"],
+            "immune_haemolytic_anaemia", "congestive_heart_failure", "diabetic_ketoacidosis",
+            "parvovirus"],
     "cat": ["hypertrophic_cardiomyopathy", "feline_urethral_obstruction",
             "polytrauma_hbc", "pancreatitis_severe", "congestive_heart_failure",
             "diabetic_ketoacidosis"],
@@ -223,6 +236,27 @@ def generate_case(
         # Highly stressed, uncooperative dog — dramatically increases stochastic failure rates
         patient = patient.model_copy(update={"cooperation_score": 0.4, "pain_amplifier": 1.5})
 
+    if task_id == "hard_parvovirus_day1":
+        # Day 1 of symptoms: very sick puppy, symptom onset ~18h ago.
+        # symptom_onset_hours drives the 25% SNAP false-negative rate.
+        # Severity set to make clinical signs unmistakably catastrophic:
+        # bloody diarrhoea + severe lethargy + shock vitals should scream parvo
+        # to a clinician — the false-negative SNAP is the only source of doubt.
+        patient = patient.model_copy(update={
+            "symptom_onset_hours": 18.0,    # day 1 — 25% SNAP false-negative rate active
+            "severity": 0.52,
+            "heart_rate": 148.0,
+            "respiratory_rate": 32.0,
+            "temperature": 40.1,            # fever — early parvo is febrile
+            "spo2": 96.0,
+            "systolic_bp": 90.0,            # hypotensive — early septic shock
+            "mucous_membrane_color": "pale",
+            "capillary_refill_time": 3.0,
+            "mentation": "obtunded",
+            "pain_score": 7,
+            "cooperation_score": 0.7,       # sick but manageable
+        })
+
     if task_id == "hard_nosocomial_chf_ward":
         # Patient already 20h post-admission and partially stabilised.
         # Vitals reflect successful initial treatment: oedema receding, SpO2 recovering.
@@ -250,6 +284,7 @@ def generate_case(
         "easy_gdv":                      None,      # no budget constraint
         "medium_hcm_cat":                80000.0,
         "hard_nosocomial_chf_ward":      55000.0,   # nosocomial task — residual budget after 20h of prior treatment
+        "hard_parvovirus_day1":          45000.0,   # modest budget — stray/rescue dog, owner financially constrained
     }
     if task_id in TASK_BUDGETS:
         budget = TASK_BUDGETS[task_id]
@@ -358,4 +393,6 @@ def generate_case(
         "correct_dispositions_override": (
             ["discharge_with_medication"] if task_id == "hard_nosocomial_chf_ward" else None
         ),
+        # Clinical gestalt opt-in flag — enables false-negative SNAP scoring
+        "clinical_gestalt_enabled": task_id == "hard_parvovirus_day1",
     }

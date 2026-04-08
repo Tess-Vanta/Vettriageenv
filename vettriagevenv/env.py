@@ -47,7 +47,7 @@ class VetTriageEnv:
     metadata = {
         "name": "VetTriageEnv",
         "version": "1.0.0",
-        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_imha_budget", "hard_polytrauma", "hard_stochastic_pancreatitis", "hard_nosocomial_chf_ward"],
+        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_imha_budget", "hard_polytrauma", "hard_stochastic_pancreatitis", "hard_nosocomial_chf_ward", "hard_parvovirus_day1"],
         "reward_range": (-5.0, 5.0),
     }
 
@@ -472,6 +472,13 @@ class VetTriageEnv:
                     eta_hours=p.get("eta_hours", 0.0),
                     cost_incurred=0.0,
                 )
+
+        if "snap_parvo_update" in updates:
+            snap = updates["snap_parvo_update"]
+            state.patient = state.patient.model_copy(update={
+                "snap_parvo_reported": snap["reported"],
+                "snap_parvo_true_positive": snap["true_positive"],
+            })
 
     def _check_events(self, state: FullState, meta: dict) -> list:
         """Check and fire scheduled mid-episode events."""

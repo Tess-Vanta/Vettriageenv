@@ -218,6 +218,13 @@ class PatientInternalState(BaseModel):
     # Nosocomial hazard — hospital-acquired infection tracking
     nosocomial_infection_acquired: bool = False
 
+    # False-negative diagnostic mechanic — sensitivity vs. specificity
+    # symptom_onset_hours: how long symptoms have been present at presentation.
+    # Drives SNAP test false-negative rate (75% sensitivity on day 1 → 25% FN rate).
+    symptom_onset_hours: float = 72.0       # default 72h = day 3, minimal FN rate
+    snap_parvo_reported: Optional[str] = None       # "POSITIVE" | "NEGATIVE" | None (not yet ordered)
+    snap_parvo_true_positive: bool = False           # hidden ground truth
+
 
 class OwnerInternalState(BaseModel):
     budget_limit: Optional[float]

@@ -32,6 +32,7 @@ CORRECT_ROUTES = {
     "immune_haemolytic_anaemia":     "urgent_stabilise",
     "congestive_heart_failure":      "urgent_stabilise",
     "diabetic_ketoacidosis":         "urgent_stabilise",
+    "parvovirus":                    "urgent_stabilise",
 }
 
 ACCEPTABLE_ROUTES = {
@@ -43,6 +44,7 @@ ACCEPTABLE_ROUTES = {
     "immune_haemolytic_anaemia":     ["urgent_stabilise", "immediate_resuscitation"],
     "congestive_heart_failure":      ["urgent_stabilise", "immediate_resuscitation"],
     "diabetic_ketoacidosis":         ["urgent_stabilise", "diagnostic_workup"],
+    "parvovirus":                    ["urgent_stabilise", "immediate_resuscitation"],
 }
 
 DANGEROUS_ROUTES = {
@@ -51,6 +53,7 @@ DANGEROUS_ROUTES = {
     "polytrauma_hbc":                ["discharge", "owner_decline_treatment"],
     "feline_urethral_obstruction":   ["discharge", "diagnostic_workup"],
     "hypertrophic_cardiomyopathy":   ["discharge"],
+    "parvovirus":                    ["discharge", "owner_decline_treatment"],
 }
 
 CORRECT_DISPOSITIONS = {
@@ -62,9 +65,15 @@ CORRECT_DISPOSITIONS = {
     "immune_haemolytic_anaemia":     ["admit_icu", "admit_ward"],
     "congestive_heart_failure":      ["admit_ward", "admit_icu"],
     "diabetic_ketoacidosis":         ["admit_ward", "admit_icu"],
+    "parvovirus":                    ["admit_icu", "admit_ward"],
 }
 
 KEY_EXAMINATIONS = {
+    "parvovirus": [
+        ("check_vitals", "cardiovascular"),
+        ("physical_exam", "abdomen"),
+        ("run_bloodwork", "cbc"),           # leukopenia is pathognomonic — should not be missed
+    ],
     "gastric_dilatation_volvulus": [
         ("check_vitals", "cardiovascular"),
         ("physical_exam", "abdomen"),
@@ -109,6 +118,9 @@ HARMFUL_ACTIONS = {
     "polytrauma_hbc":                ["discharge", "administer_fluid_bolus:crystalloid"],
     "hypertrophic_cardiomyopathy":   ["administer_fluid_bolus:crystalloid"],
     "feline_urethral_obstruction":   ["administer_fluid_bolus", "discharge"],
+    # Discharging a parvo patient is fatal; they die of septic shock within hours without IV fluids
+    "parvovirus":                    ["make_disposition:discharge_no_treatment",
+                                      "make_disposition:discharge_with_medication"],
 }
 
 
@@ -294,6 +306,14 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
     if meta.get("nosocomial_enabled", False):
         nosocomial_score = _score_nosocomial_hazard(state, feedback)
         breakdown["nosocomial_hazard"] = nosocomial_score
+
+    # --- Clinical gestalt score (0–0.10 or −0.15 penalty for false-negative trap) ---
+    # Only scored on tasks with clinical_gestalt_enabled=True.
+    # Rewards agents that recognise when clinical presentation overrides a negative diagnostic test.
+    # Penalises agents that stop treatment because "the SNAP said NEGATIVE."
+    if meta.get("clinical_gestalt_enabled", False):
+        gestalt_score = _score_clinical_gestalt(state, action_log, feedback)
+        breakdown["clinical_gestalt"] = gestalt_score
 
     total = sum(breakdown.values())
     total = max(0.0, min(1.0, total))
@@ -577,6 +597,134 @@ def _is_repeat_action(tool: str, params: dict, prior_log: list) -> bool:
             if entry.get("tool") == tool and entry.get("params") == params:
                 return True
     return False
+
+
+def _score_clinical_gestalt(state: FullState, action_log: list, feedback: list) -> float:
+    """
+    Score 0.0–0.10 based on whether the agent treated despite a false-negative diagnostic test.
+
+    The false-negative mechanic (parvovirus SNAP):
+      On symptom day 1, the SNAP antigen test is only ~75% sensitive. It returns
+      "NEGATIVE" 25% of the time despite true parvoviral infection. An LLM that
+      treats tool output as ground truth will stop the diagnostic pathway and may
+      discharge the patient — who then dies of septic shock.
+
+      A real clinician recognises that catastrophic clinical signs (haemorrhagic
+      diarrhoea, severe lethargy, leukopenia, young unvaccinated dog) override a
+      borderline diagnostic test. Clinical gestalt = prioritising the patient over
+      the printout.
+
+    Scenarios and scores:
+      FALSE NEGATIVE encountered:
+        Agent treated AFTER the false negative           → +0.10 (excellent gestalt)
+        Agent treated BEFORE ordering snap (empirical)   → +0.08 (strong clinical intuition)
+        Agent neither treated nor continued workup       →  0.00 (passive failure)
+        Agent discharged AFTER false negative            → −0.15 (critical error — patient dies)
+
+      NO FALSE NEGATIVE (true positive or test not ordered):
+        True positive encountered, treated after          → +0.05 (correct, no challenge)
+        Never ordered snap, treated on clinical signs     → +0.06 (empirical treatment — valid)
+        No treatment regardless                           →  0.00 (treatment failure)
+    """
+    snap_reported = state.patient.snap_parvo_reported
+    snap_true_pos = state.patient.snap_parvo_true_positive
+    is_false_negative = (snap_reported == "NEGATIVE" and snap_true_pos)
+
+    # Find the action-log index where the snap test was ordered
+    snap_idx = None
+    for i, entry in enumerate(action_log):
+        if isinstance(entry, dict) and entry.get("tool") == "run_snap_test":
+            snap_idx = i
+            break
+
+    # --- No SNAP test ordered at all ---
+    if snap_idx is None:
+        treated = any(
+            isinstance(e, dict) and e.get("tool") in THERAPEUTIC_TOOLS
+            for e in action_log
+        )
+        if treated:
+            feedback.append(
+                "Clinical gestalt: initiated treatment on clinical signs alone — "
+                "empirical parvo treatment without confirmatory SNAP test is valid"
+            )
+            return 0.06
+        feedback.append(
+            "No SNAP test ordered and no treatment initiated — "
+            "failed to act on catastrophic clinical signs"
+        )
+        return 0.00
+
+    # --- FALSE NEGATIVE scenario (the critical test of this mechanic) ---
+    if is_false_negative:
+        # Was treatment given BEFORE the snap test (pre-emptive clinical diagnosis)?
+        treated_before_snap = any(
+            isinstance(action_log[j], dict) and action_log[j].get("tool") in THERAPEUTIC_TOOLS
+            for j in range(snap_idx)
+        )
+        # Was treatment given AFTER the false-negative result?
+        treated_after_snap = any(
+            isinstance(action_log[j], dict) and action_log[j].get("tool") in THERAPEUTIC_TOOLS
+            for j in range(snap_idx + 1, len(action_log))
+        )
+        # Did the agent discharge after the false negative?
+        discharged_after_snap = any(
+            isinstance(action_log[j], dict)
+            and action_log[j].get("tool") == "make_disposition"
+            and action_log[j].get("params", {}).get("decision") in (
+                "discharge_no_treatment", "discharge_with_medication"
+            )
+            for j in range(snap_idx + 1, len(action_log))
+        )
+
+        if discharged_after_snap:
+            feedback.append(
+                "CRITICAL GESTALT FAILURE: Patient discharged after false-negative SNAP test. "
+                "Clinical signs (haemorrhagic diarrhoea, leukopenia, young unvaccinated dog) "
+                "were sufficient to diagnose parvovirus without confirmatory test. "
+                "SNAP sensitivity is only ~75% on day 1 — negative does NOT mean no parvo."
+            )
+            return -0.15
+
+        if treated_before_snap:
+            feedback.append(
+                "Excellent clinical gestalt: empirically treated before SNAP test, "
+                "then correctly continued treatment despite false-negative result"
+            )
+            return 0.10
+
+        if treated_after_snap:
+            feedback.append(
+                "Excellent clinical gestalt: treated for parvovirus DESPITE a negative SNAP result — "
+                "correctly recognised that day-1 test sensitivity is limited (~75%) and "
+                "that clinical presentation (haemorrhagic diarrhoea, leukopenia) overrides the test"
+            )
+            return 0.10
+
+        feedback.append(
+            "Gestalt absent: received false-negative SNAP result and stopped therapeutic pathway. "
+            "Correct approach: treat based on clinical signs when presentation is consistent "
+            "with parvo regardless of SNAP result on day 1."
+        )
+        return 0.00
+
+    # --- True positive result (no gestalt challenge) ---
+    if snap_reported == "POSITIVE":
+        treated_after = any(
+            isinstance(action_log[j], dict) and action_log[j].get("tool") in THERAPEUTIC_TOOLS
+            for j in range(snap_idx + 1, len(action_log))
+        )
+        if treated_after:
+            feedback.append(
+                "Treated after positive SNAP result — correct. "
+                "No false-negative challenge encountered this episode."
+            )
+            return 0.05
+        feedback.append("SNAP test positive but no treatment initiated — missed treatment opportunity")
+        return 0.00
+
+    # Default (snap not relevant to this diagnosis)
+    return 0.03
 
 
 def _score_nosocomial_hazard(state: FullState, feedback: list) -> float:
