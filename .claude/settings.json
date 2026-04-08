@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ':*)",
+      "Bash(python -m openenv.cli validate)",
+      "Bash(uv lock:*)",
+      "Bash(python -m uv lock)",
+      "Bash(python baseline_rulebased.py)",
+      "Bash(rm -f __init__.py models.py baseline_results.json)",
+      "Bash(rm -rf __pycache__ outputs vettriagevenv/__pycache__ server/__pycache__)",
+      "Bash(python baseline_rulebased.py --quiet)",
+      "WebFetch(domain:www.scaler.com)",
+      "WebFetch(domain:unstop.com)",
+      "WebFetch(domain:www.opensourceforu.com)",
+      "Bash(PYTHONUTF8=1 python -m openenv.cli push --repo-id VantaTess/vettriagevenv)"
+    ]
+  }
+}
