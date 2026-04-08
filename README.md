@@ -5,6 +5,8 @@ colorFrom: blue
 colorTo: red
 sdk: docker
 pinned: false
+tags:
+  - openenv
 ---
 
 # VetTriageEnv
