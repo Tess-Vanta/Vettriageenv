@@ -19,14 +19,22 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY", "")
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
+API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+MODEL_NAME   = os.getenv("MODEL_NAME")   or "Qwen/Qwen2.5-72B-Instruct"
 ENV_URL      = os.getenv("ENV_URL",      "https://vantatess-vettriagevenv.hf.space")
 BENCHMARK    = "vettriagevenv"
 MAX_STEPS    = 40
 
-TASKS = ["easy_gdv", "medium_hcm_cat", "hard_polytrauma"]
+TASKS = [
+    "easy_gdv",
+    "medium_hcm_cat",
+    "hard_imha_budget",
+    "hard_polytrauma",
+    "hard_stochastic_pancreatitis",
+    "hard_parvovirus_day1",
+    "hard_nosocomial_chf_ward",
+]
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -40,24 +48,47 @@ SYSTEM_PROMPT = textwrap.dedent("""
       run_bloodwork       {"panel": "cbc"|"chemistry"|"coagulation"|"lactate"}
       run_imaging         {"modality": "radiograph"|"ultrasound", "region": "thorax"|"abdomen"|"spine"}
       collect_result      {"job_id": "<id from pending_results>"}
-      place_iv_access     {}
+      place_iv_access     {"site": "cephalic"|"saphenous"|"jugular"}
       administer_fluid_bolus {"fluid_type": "crystalloid"|"colloid", "dose_ml_kg": <number>}
       give_medication     {"drug": "<name>", "dose": "<dose>", "route": "iv"|"im"|"po"}
-      oxygen_therapy      {"method": "flow-by"|"mask"|"cage"}
+      oxygen_therapy      {"method": "flow-by"|"mask"|"nasal_cannula"|"cage"}
       perform_procedure   {"procedure": "thoracocentesis"|"gastric_decompression"|"urinary_catheter"}
       contact_owner       {"message": "<msg>"}
       consult_specialist  {"specialty": "cardiology"|"surgery"|"neurology", "question": "<q>"}
       decide_triage_route {"route": "immediate_resuscitation"|"urgent_stabilise"|"standard_triage"|"monitor_observe"}
-      make_disposition    {"disposition": "admit_icu"|"admit_ward"|"discharge_home"|"refer_specialist"|"euthanasia"}
+      make_disposition    {"disposition": "admit_icu"|"admit_ward"|"discharge_with_medication"|"discharge_home"|"refer_specialist"|"euthanasia"}
 
-    Strategy:
-    - In triage phase: check vitals and key exam findings, then call decide_triage_route.
-    - In stabilisation: treat life-threatening problems (IV access, fluids, oxygen, medications, procedures).
-    - In monitoring: track trends, collect pending results.
-    - In disposition: call make_disposition when patient is stable.
-    - GDV dogs need immediate_resuscitation -> admit_icu. NEVER discharge a GDV.
-    - HCM cats: do NOT give crystalloid bolus. Use furosemide. Thoracocentesis if pleural effusion.
-    - Polytrauma: image thorax/abdomen urgently; prefer colloid over crystalloid.
+    CRITICAL RULES — ALWAYS follow these:
+
+    1. STOCHASTIC FAILURES: After EVERY action, check action_succeeded and latest_clinical_event.
+       - If action_succeeded=false, the intervention DID NOT work. Adapt immediately:
+         * Oxygen mask failed → switch to {"method": "cage"} or {"method": "nasal_cannula"}
+         * IV placement failed → retry with different site (saphenous if cephalic failed)
+         * Oral medication failed → switch route to {"route": "iv"}
+       - Silent failures look like success — action_succeeded is the only reliable indicator.
+
+    2. BUDGET: Always call contact_owner first on budget-constrained tasks to learn the limit.
+       - Check budget_remaining before ordering expensive diagnostics.
+       - CBC+lactate (cheap) beats full_panel+ultrasound (expensive) when budget is tight.
+
+    3. TIME PRESSURE: Treat first, diagnose later when SpO2 is falling or patient is critical.
+       - Oxygen therapy and stabilisation come before confirmatory tests.
+       - For HCM cats: DO NOT give crystalloid bolus (causes pulmonary oedema). Use furosemide.
+       - For haemoabdomen: prefer colloid over crystalloid.
+
+    4. FALSE NEGATIVES: A negative SNAP parvo test in an unvaccinated puppy with haemorrhagic
+       diarrhoea does NOT rule out parvo. Clinical signs override a day-1 test. Treat anyway.
+
+    5. NOSOCOMIAL HAZARD: Check monitoring_trends["nosocomial_risk"] each step.
+       - Discharge the patient before the 24h infection window closes.
+       - Do NOT over-monitor (repeat bloodwork, unnecessary consults) if patient is stable.
+
+    6. PHASE SEQUENCE: triage → stabilisation → monitoring → disposition.
+       - Triage: check vitals + key exam → decide_triage_route.
+       - GDV dogs: immediate_resuscitation → admit_icu. NEVER discharge a GDV.
+       - Stabilisation: IV access → fluids/oxygen/medications/procedures.
+       - Monitoring: collect pending results, check trends, plan discharge.
+       - Disposition: make_disposition when patient is stable.
 
     Respond with ONLY a valid JSON object (no markdown, no explanation):
     {"tool": "<tool_name>", "parameters": {<params>}, "reasoning": "<brief reason>"}
@@ -84,7 +115,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -116,17 +147,32 @@ def step_env(tool: str, parameters: dict, reasoning: str = "") -> dict:
 def get_action(client: OpenAI, obs: dict, history: List[str]) -> tuple:
     history_block = "\n".join(history[-6:]) if history else "None"
 
+    # Build stochastic failure warning if last action failed
+    action_status = ""
+    if not obs.get("action_succeeded", True):
+        action_status = f"\n⚠ LAST ACTION FAILED: {obs.get('latest_clinical_event','unknown failure')} — MUST ADAPT!"
+    elif obs.get("latest_clinical_event"):
+        action_status = f"\nLast clinical event: {obs.get('latest_clinical_event')}"
+
+    # Budget display
+    budget_str = "no limit"
+    if obs.get("budget_limit") is not None:
+        budget_str = f"₹{obs.get('budget_remaining', obs.get('budget_limit', 0)):.0f} remaining of ₹{obs.get('budget_limit'):.0f}"
+
     user_prompt = textwrap.dedent(f"""
         Patient : {obs.get('species','')} {obs.get('breed','')} {obs.get('age_years','')}yr {obs.get('sex','')} {obs.get('weight_kg','')}kg
         Complaint: {obs.get('presenting_complaint','')}
-        Phase    : {obs.get('phase','')}  step {obs.get('step',0)}/{obs.get('phase_step_limit',20)}
+        Phase    : {obs.get('phase','')}  step {obs.get('step',0)}/{obs.get('phase_step_limit',20)}  sim_time={obs.get('sim_time_hours',0):.1f}h
+        Budget   : {budget_str}
         Vitals   : {json.dumps(obs.get('vitals')) if obs.get('vitals') else 'not checked yet'}
         Exam     : {obs.get('physical_exam_findings',{})}
         Labs     : {obs.get('lab_results',{})}
         Imaging  : {obs.get('imaging_results',{})}
         Pending  : {obs.get('pending_results',[])}
+        Monitoring: {obs.get('monitoring_trends') or 'N/A'}
         Events   : {obs.get('events',[])}
         Available tools: {obs.get('available_tools',[])}
+        {action_status}
 
         Recent history:
         {history_block}

@@ -121,6 +121,16 @@ class VetTriageObservation(BaseObservation):
     # Available tools
     available_tools: List[str] = Field(default_factory=list)
 
+    # Simulated time clock
+    sim_time_hours: float = Field(default=0.0)
+
+    # Stochastic failure flags — MUST be checked after every action
+    action_succeeded: bool = Field(default=True)
+    latest_clinical_event: Optional[str] = Field(default=None)
+
+    # Budget remaining (None until owner contacted)
+    budget_remaining: Optional[float] = Field(default=None)
+
     # Terminal
     terminal_reason: Optional[str] = Field(default=None)
 
@@ -333,6 +343,7 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
             owner_contact_established=obs.owner_contact_established,
             budget_limit=obs.budget_limit,
             budget_spent=obs.budget_spent,
+            budget_remaining=obs.budget_remaining,
             consent_items=obs.consent_items,
             specialist_opinion=obs.specialist_opinion,
             events=obs.events,
@@ -342,6 +353,9 @@ class VetTriageEnvironment(Environment[VetTriageAction, VetTriageObservation, Ve
             monitoring_trends=obs.monitoring_trends,
             disposition_options=obs.disposition_options,
             available_tools=obs.available_tools,
+            sim_time_hours=obs.sim_time_hours,
+            action_succeeded=obs.action_succeeded,
+            latest_clinical_event=obs.latest_clinical_event,
             terminal_reason=obs.terminal_reason,
             task_id=self._current_task_id,
             available_tasks=list_tasks(),
