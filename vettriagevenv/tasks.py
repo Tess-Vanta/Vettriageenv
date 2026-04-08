@@ -91,6 +91,44 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     ),
 
     # ------------------------------------------------------------------
+    # HARD: Resource Scarcity — strict budget forces information prioritisation
+    # ------------------------------------------------------------------
+    "hard_imha_budget": TaskSpec(
+        task_id="hard_imha_budget",
+        name="The Budget Crisis — IMHA with £380 Limit",
+        difficulty="hard",
+        description=(
+            "A 5-year-old Cocker Spaniel presents with progressive weakness, pale/icteric "
+            "mucous membranes, and collapse. The differential includes immune-mediated haemolytic "
+            "anaemia (IMHA), internal haemorrhage, and hepatic failure. "
+            "THE RESOURCE SCARCITY DILEMMA: The owner reveals a hard budget of £380. "
+            "A brute-force agent running all diagnostics costs £635+. "
+            "The agent must choose: CBC (£45, confirms IMHA) OR chemistry (£80) OR imaging (£90-130) — "
+            "not all three. The correct strategy: CBC + lactate (£80 total) is sufficient to confirm "
+            "IMHA and guide treatment. Imaging and full chemistry are wasteful here. "
+            "Any agent that runs full_panel (£160) + ultrasound (£130) + bloodwork + procedures "
+            "will exceed budget and be blocked from administering critical treatments. "
+            "Contact owner FIRST to discover the budget before ordering anything."
+        ),
+        seed=777,
+        force_diagnosis="immune_haemolytic_anaemia",
+        force_species="dog",
+        optimal_route="urgent_stabilise",
+        optimal_disposition="admit_icu",
+        passing_threshold=0.50,
+        max_steps=40,
+        notes=[
+            "BUDGET: £380 hard limit — contact_owner first to learn this",
+            "WRONG: full_panel(£160) + ultrasound(£130) + procedures = BLOCKED at £380",
+            "RIGHT: cbc(£45) + lactate(£35) = £80 confirms IMHA, leaves £300 for treatment",
+            "Haemic murmur + icteric MMs + tachycardia = IMHA without any bloodwork",
+            "Blood products (£35) + immunosuppression (give_medication) are key treatments",
+            "Crystalloid fluids are NOT harmful here (unlike HCM) but wasteful on budget",
+            "Grader scores: budget_efficiency is 15% of total score on this task",
+        ],
+    ),
+
+    # ------------------------------------------------------------------
     # HARD: Multi-system, budget constraints, mid-episode events
     # ------------------------------------------------------------------
     "hard_polytrauma": TaskSpec(
