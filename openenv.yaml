@@ -4,10 +4,75 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 7860
-version: "1.0.0"
+version: "2.0.0"
 description: >
   Veterinary triage RL environment. An AI agent gathers clinical information
   via structured tool calls and makes correct triage decisions for procedurally-generated
-  animal patients (dogs and cats). Features: deteriorating patient physiology,
-  async diagnostic results, owner budget constraints, mid-episode events (seizures,
-  shift handoffs), and multi-phase episodes (triage → stabilisation → monitoring → disposition).
+  animal patients (dogs and cats).
+
+  7 benchmark tasks spanning easy → medium → hard:
+    easy_gdv                    — GDV emergency, clear signal, baseline test
+    medium_hcm_cat              — HCM dyspnoeic cat, wait-vs-treat time dilemma
+    hard_imha_budget            — IMHA with ₹38,000 hard budget (resource scarcity)
+    hard_polytrauma             — Hit-by-car polytrauma, mid-episode seizure
+    hard_stochastic_pancreatitis — Uncooperative patient, silent/overt action failures
+    hard_parvovirus_day1        — False-negative SNAP test (25% FN on day 1), clinical gestalt
+    hard_nosocomial_chf_ward    — CHF ward stay, escalating hospital-infection clock
+
+  Key mechanics:
+    - Deteriorating patient physiology (severity increases over simulated time)
+    - Async diagnostic results with time-based ETAs (stat vs routine)
+    - Owner budget constraints with hard spending limits
+    - Stochastic action failures (silent and overt, cooperation-score scaled)
+    - False-negative diagnostics (sensitivity < 1 on day 1)
+    - Nosocomial hazard (escalating infection probability per 24h in clinic)
+    - Mid-episode events (seizures, budget revisions, shift handoffs)
+    - Multi-phase episodes: triage → stabilisation → monitoring → disposition
+
+tasks:
+  - easy_gdv
+  - medium_hcm_cat
+  - hard_imha_budget
+  - hard_polytrauma
+  - hard_stochastic_pancreatitis
+  - hard_parvovirus_day1
+  - hard_nosocomial_chf_ward
+
+reward_range: [-5.0, 5.0]
+
+action_space:
+  type: structured_tool_call
+  tools:
+    - check_vitals
+    - physical_exam
+    - run_bloodwork
+    - run_imaging
+    - collect_result
+    - place_iv_access
+    - administer_fluid_bolus
+    - give_medication
+    - oxygen_therapy
+    - perform_procedure
+    - contact_owner
+    - consult_specialist
+    - decide_triage_route
+    - make_disposition
+
+observation_space:
+  type: structured
+  fields:
+    - step (int)
+    - phase (triage | stabilisation | monitoring | disposition)
+    - sim_time_hours (float — simulated clock)
+    - presenting_complaint (str)
+    - vitals (VitalsSnapshot | null)
+    - physical_exam_findings (dict)
+    - lab_results (dict)
+    - imaging_results (dict)
+    - pending_results (list[AsyncJob])
+    - budget_limit (float | null)
+    - budget_remaining (float | null)
+    - action_succeeded (bool — stochastic failure flag)
+    - latest_clinical_event (str | null — failure description)
+    - monitoring_trends (dict | null — includes nosocomial_risk)
+    - events (list[str] — mid-episode events)
