@@ -245,14 +245,32 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
     else:
         breakdown["harmful_action_penalty"] = 0.0
 
-    # --- Budget handling bonus (0–0.05) ---
-    if state.owner.budget_limit and state.owner.budget_spent <= state.owner.budget_limit:
-        breakdown["budget_adherence"] = 0.05
-    elif state.owner.budget_limit is None:
-        breakdown["budget_adherence"] = 0.03  # unknown budget, no penalty
+    # --- Budget efficiency (0–0.10) ---
+    # Reward agents that complete the task under budget AND avoid wasteful testing.
+    budget_limit = state.owner.budget_limit
+    budget_spent = state.owner.budget_spent
+    if budget_limit is None:
+        # No budget constraint — small neutral score
+        breakdown["budget_efficiency"] = 0.03
+        feedback.append("No budget constraint — budget efficiency not scored")
+    elif budget_spent > budget_limit:
+        overspend = budget_spent - budget_limit
+        breakdown["budget_efficiency"] = 0.0
+        feedback.append(f"OVER BUDGET: spent £{budget_spent:.0f} of £{budget_limit:.0f} limit (overspend £{overspend:.0f})")
     else:
-        overspend = state.owner.budget_spent - state.owner.budget_limit
-        breakdown["budget_adherence"] = max(0.0, 0.05 - overspend / 1000)
+        utilisation = budget_spent / budget_limit
+        if utilisation <= 0.60:
+            budget_score = 0.10
+            feedback.append(f"Excellent budget efficiency: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+        elif utilisation <= 0.85:
+            budget_score = 0.06
+            feedback.append(f"Good budget management: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+        elif utilisation <= 1.0:
+            budget_score = 0.03
+            feedback.append(f"Near budget limit: spent £{budget_spent:.0f} of £{budget_limit:.0f} ({utilisation:.0%})")
+        else:
+            budget_score = 0.0
+        breakdown["budget_efficiency"] = budget_score
 
     total = sum(breakdown.values())
     total = max(0.0, min(1.0, total))
@@ -409,8 +427,12 @@ def compute_step_reward(
         limit = state_before.owner.budget_limit
         if spent > limit:
             overage = spent - limit
-            components["budget_penalty"] = -min(0.2, overage / 500)
+            components["budget_penalty"] = -min(0.4, overage / 300)
             messages.append(f"Over budget by £{overage:.0f}")
+        elif limit - spent < 50 and limit < 600:
+            # Near budget on a tight-budget task — warn
+            components["near_budget_warning"] = -0.02
+            messages.append(f"Budget nearly exhausted: £{spent:.0f}/£{limit:.0f}")
 
     # --- Dangerous action penalty ---
     harmful = HARMFUL_ACTIONS.get(diag, [])

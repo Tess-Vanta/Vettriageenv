@@ -209,19 +209,36 @@ def generate_case(
     # We store species as attribute hack via a wrapper; for now use a field
     patient = patient.model_copy(update={"true_diagnosis": diagnosis_key})
 
-    # Owner
-    budget = rng.choice([500, 800, 1200, 2000, 3000, 5000])
-    if difficulty == "hard":
-        budget = rng.choice([400, 600, 800])
+    # Owner — budget set per task
+    TASK_BUDGETS = {
+        "hard_imha_budget": 380.0,   # resource scarcity showcase — brute-force costs £635+
+        "hard_polytrauma":  600.0,
+        "easy_gdv":         None,    # no budget constraint
+        "medium_hcm_cat":   800.0,
+    }
+    if task_id in TASK_BUDGETS:
+        budget = TASK_BUDGETS[task_id]
+    elif difficulty == "hard":
+        budget = float(rng.choice([400, 600, 800]))
+    else:
+        budget = float(rng.choice([500, 800, 1200, 2000, 3000, 5000]))
+
+    # Budget change events (random, not on fixed-budget tasks)
+    if task_id in TASK_BUDGETS:
+        budget_change_at_step = None
+        budget_change_delta = None
+    else:
+        budget_change_at_step = rng.choice([None, None, None, 8, 10, 12])
+        budget_change_delta = rng.choice([None, None, -150.0, -200.0, +300.0])
 
     owner = OwnerInternalState(
-        budget_limit=float(budget),
+        budget_limit=budget,  # None = no constraint (grader treats differently)
         budget_spent=0.0,
         contact_established=False,
         consent_items=[],
         history_reliability=rng.uniform(0.6, 1.0),
-        budget_change_at_step=rng.choice([None, None, None, 8, 10, 12]),
-        budget_change_delta=rng.choice([None, None, -150.0, -200.0, +300.0]),
+        budget_change_at_step=budget_change_at_step,
+        budget_change_delta=budget_change_delta,
     )
 
     # Generate presenting complaint

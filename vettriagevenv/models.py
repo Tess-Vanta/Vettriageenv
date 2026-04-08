@@ -124,6 +124,7 @@ class Observation(BaseModel):
     owner_contact_established: bool = False
     budget_limit: Optional[float] = None
     budget_spent: float = 0.0
+    budget_remaining: Optional[float] = None  # None until owner contacted
     consent_items: List[str] = Field(default_factory=list)
 
     # Specialist opinion (after consult)

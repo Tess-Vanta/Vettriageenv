@@ -153,6 +153,26 @@ class VetTriageEnv:
             action, state, self._rng, sim_time_hours=state.sim_time_hours
         )
 
+        # --- Budget hard-stop: block paid actions when over budget ---
+        if cost > 0 and state.owner.budget_limit is not None:
+            remaining = state.owner.budget_limit - state.owner.budget_spent
+            if remaining <= 0:
+                obs = self._build_observation(events=[
+                    f"BUDGET EXHAUSTED: £{state.owner.budget_spent:.0f} spent of £{state.owner.budget_limit:.0f} limit. "
+                    f"'{action.tool}' costs £{cost:.0f} — cannot proceed. "
+                    "Only free actions (check_vitals, physical_exam, decide_triage_route, make_disposition) are available."
+                ])
+                reward = Reward(
+                    value=-0.25,
+                    components={"budget_exceeded": -0.25},
+                    message=f"Over budget — {action.tool} blocked (£{cost:.0f})",
+                )
+                state.step += 1
+                state.phase_step += 1
+                self._action_log.append(action_dict)
+                self._state = state
+                return obs, reward, False, {"error": "budget_exceeded"}
+
         # --- Apply financial cost ---
         state.owner.budget_spent += cost
 
@@ -354,6 +374,11 @@ class VetTriageEnv:
             owner_contact_established=owner.contact_established,
             budget_limit=owner.budget_limit if owner.contact_established else None,
             budget_spent=owner.budget_spent,
+            budget_remaining=(
+                round(owner.budget_limit - owner.budget_spent, 2)
+                if owner.contact_established and owner.budget_limit is not None
+                else None
+            ),
             consent_items=owner.consent_items,
             specialist_opinion=state.specialist_opinion,
             events=events,
