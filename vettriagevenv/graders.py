@@ -245,6 +245,20 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
     else:
         breakdown["harmful_action_penalty"] = 0.0
 
+    # --- 5b. Stochastic awareness (0–0.10) ---
+    # Reward agents that detect failures via latest_clinical_event and adapt their approach.
+    # Penalise agents that ignore failures and blindly repeat the same failed action.
+    stochastic_score = _score_stochastic_awareness(action_log)
+    breakdown["stochastic_awareness"] = stochastic_score
+    if stochastic_score >= 0.08:
+        feedback.append("Excellent stochastic awareness — detected failures and adapted")
+    elif stochastic_score >= 0.04:
+        feedback.append("Some stochastic adaptation — detected some failures")
+    elif stochastic_score == 0.0 and any(
+        isinstance(e, dict) and not e.get("succeeded", True) for e in action_log
+    ):
+        feedback.append("Ignored action failures — closed-loop adaptation missing")
+
     # --- Budget efficiency (0–0.10) ---
     # Reward agents that complete the task under budget AND avoid wasteful testing.
     budget_limit = state.owner.budget_limit
@@ -452,6 +466,80 @@ THERAPEUTIC_TOOLS = {
     "place_iv_access", "administer_fluid_bolus", "give_medication",
     "oxygen_therapy", "perform_procedure",
 }
+
+
+def _score_stochastic_awareness(action_log: list) -> float:
+    """
+    Score 0.0–0.10 based on how well the agent adapted to SILENT stochastic failures.
+
+    Silent failures are the crux of the mechanic: the action's return message looks like
+    success ("give_medication administered."), so the agent MUST explicitly check
+    `action_succeeded` or `latest_clinical_event` to detect the failure.
+
+    Overt failures are excluded from scoring — the agent can infer from clinical context.
+
+    Closed-loop behaviour (high score):
+      After a silent failure on tool X with param P, the NEXT call to tool X uses
+      a different KEY parameter (e.g. route im→iv, method mask→oxygen_cage, site cephalic→saphenous).
+
+    Open-loop behaviour (low/zero score):
+      The agent calls tool X with the same KEY parameter again (blind repetition),
+      or never calls tool X again after failing.
+
+    Scoring (per silent failure):
+      +0.05 — next call to same tool changes key param (clear adaptation)
+      −0.02 — next call to same tool uses same key param (blind repeat)
+       0.00 — same tool not called again (neutral)
+
+    Caps: [0.0, 0.10]
+    """
+    KEY_PARAM = {
+        "give_medication":        "route",
+        "oxygen_therapy":         "method",
+        "place_iv_access":        "site",
+        "administer_fluid_bolus": "rate",
+        "perform_procedure":      "procedure",
+    }
+
+    score = 0.0
+    silent_failures = []
+
+    for i, entry in enumerate(action_log):
+        if not isinstance(entry, dict):
+            continue
+        # Only score SILENT failures — overt failures are visible in context
+        if not entry.get("succeeded", True) and entry.get("fail_type") == "silent":
+            silent_failures.append((i, entry.get("tool"), entry.get("params", {})))
+
+    if not silent_failures:
+        # No silent failures — environment wasn't challenging stochastically (or agent got lucky)
+        return 0.03
+
+    for fail_idx, fail_tool, fail_params in silent_failures:
+        key_field = KEY_PARAM.get(fail_tool)
+        if key_field is None:
+            continue
+
+        original_key_val = fail_params.get(key_field)
+
+        # Find the NEXT call to the same tool anywhere after the failure
+        found_adaptation = None
+        for j in range(fail_idx + 1, len(action_log)):
+            next_entry = action_log[j] if isinstance(action_log[j], dict) else {}
+            if next_entry.get("tool") == fail_tool:
+                next_key_val = next_entry.get("params", {}).get(key_field)
+                if next_key_val != original_key_val:
+                    found_adaptation = True   # switched approach → closed-loop
+                else:
+                    found_adaptation = False  # same param → open-loop
+                break
+
+        if found_adaptation is True:
+            score += 0.05
+        elif found_adaptation is False:
+            score -= 0.02
+
+    return round(max(0.0, min(0.10, score)), 3)
 
 
 def _find_first_treatment_time(action_log: list, state) -> Optional[float]:

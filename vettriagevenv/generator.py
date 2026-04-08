@@ -205,16 +205,20 @@ def generate_case(
 
     # Build patient state
     patient = build_initial_physiology(profile, species, weight, severity, rng)
-    # Patch in species (not in PatientInternalState by default — we track it in case context)
-    # We store species as attribute hack via a wrapper; for now use a field
     patient = patient.model_copy(update={"true_diagnosis": diagnosis_key})
+
+    # Task-specific patient overrides
+    if task_id == "hard_stochastic_pancreatitis":
+        # Highly stressed, uncooperative dog — dramatically increases stochastic failure rates
+        patient = patient.model_copy(update={"cooperation_score": 0.4, "pain_amplifier": 1.5})
 
     # Owner — budget set per task
     TASK_BUDGETS = {
-        "hard_imha_budget": 38000.0,   # resource scarcity showcase — brute-force costs ₹63,500+
-        "hard_polytrauma":  60000.0,
-        "easy_gdv":         None,      # no budget constraint
-        "medium_hcm_cat":   80000.0,
+        "hard_imha_budget":              38000.0,   # resource scarcity showcase — brute-force costs ₹63,500+
+        "hard_polytrauma":               60000.0,
+        "hard_stochastic_pancreatitis":  70000.0,   # sufficient, but failures drain budget if not adapted
+        "easy_gdv":                      None,      # no budget constraint
+        "medium_hcm_cat":                80000.0,
     }
     if task_id in TASK_BUDGETS:
         budget = TASK_BUDGETS[task_id]

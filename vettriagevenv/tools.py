@@ -323,11 +323,135 @@ IMAGING_ETA_HOURS   = {"urgent": 0.5, "routine": 1.5}
 
 
 # ---------------------------------------------------------------------------
+# Stochastic failure profiles
+# ---------------------------------------------------------------------------
+# Each entry: base_fail_rate, fail_type ("silent"|"overt"), fail_messages
+# Failure rate is multiplied by (2 - cooperation_score) so distressed patients fail more.
+# "silent" = action appears to proceed but has no effect (agent must check latest_clinical_event)
+# "overt"  = observable struggle that the agent can infer from context
+
+FAILURE_PROFILES: Dict[str, Dict] = {
+    "give_medication": {
+        "im":           {"rate": 0.10, "type": "overt",
+                         "messages": [
+                             "Patient flinched — injection site may have been missed. Check response.",
+                             "Animal moved during IM injection — dose delivery uncertain.",
+                         ]},
+        "po":           {"rate": 0.35, "type": "silent",
+                         "messages": [
+                             "Patient spat out tablet when you turned away — medication not absorbed.",
+                             "Tablet found on kennel floor — oral administration failed silently.",
+                             "Animal appeared to swallow but regurgitated tablet moments later.",
+                         ]},
+        "intranasal":   {"rate": 0.20, "type": "overt",
+                         "messages": [
+                             "Patient shook head vigorously — intranasal dose partially lost.",
+                             "Animal sneezed immediately after intranasal administration — dose uncertain.",
+                         ]},
+        "iv":           {"rate": 0.05, "type": "overt",
+                         "messages": [
+                             "Perivascular injection suspected — slight swelling at site.",
+                         ]},
+    },
+    "place_iv_access": {
+        "default":      {"rate": 0.20, "type": "overt",
+                         "messages": [
+                             "IV placement failed — patient struggled, vessel collapsed. Retry or choose different site.",
+                             "Catheter kinked on placement — IV access not secured. Retry required.",
+                             "Vessel blew on insertion — haematoma forming. Try alternate site.",
+                         ]},
+    },
+    "perform_procedure": {
+        "thoracocentesis":      {"rate": 0.15, "type": "overt",
+                                 "messages": [
+                                     "Thoracocentesis aborted — patient too distressed to hold position safely.",
+                                     "Needle deflected off rib — reposition and retry.",
+                                 ]},
+        "gastric_decompression":{"rate": 0.10, "type": "overt",
+                                 "messages": [
+                                     "Gastric tube met resistance — decompression incomplete. Retry with sedation.",
+                                 ]},
+        "default":              {"rate": 0.08, "type": "overt",
+                                 "messages": [
+                                     "Procedure interrupted — patient uncooperative. Consider sedation first.",
+                                 ]},
+    },
+    "oxygen_therapy": {
+        "mask":         {"rate": 0.25, "type": "silent",
+                         "messages": [
+                             "Patient removed mask — oxygen delivery interrupted silently.",
+                             "Mask seal broken by patient movement — FiO2 delivery sub-therapeutic.",
+                         ]},
+        "flow_by":      {"rate": 0.10, "type": "silent",
+                         "messages": [
+                             "Patient moved away from flow-by — oxygen delivery uncertain.",
+                         ]},
+        "default":      {"rate": 0.05, "type": "overt",
+                         "messages": [
+                             "Oxygen delivery sub-optimal — patient resisting.",
+                         ]},
+    },
+    "administer_fluid_bolus": {
+        "default":      {"rate": 0.10, "type": "overt",
+                         "messages": [
+                             "IV line kinked during bolus — flow rate reduced, full dose not delivered.",
+                             "Catheter dislodged mid-bolus — partial dose only.",
+                         ]},
+    },
+}
+
+
+# ---------------------------------------------------------------------------
 # Tool executor
 # ---------------------------------------------------------------------------
 
 class ToolExecutor:
     """Executes tool calls against the full environment state."""
+
+    def _roll_failure(
+        self,
+        tool: str,
+        params: Dict,
+        patient,
+        rng,
+    ) -> Tuple[bool, str, str]:
+        """
+        Roll for stochastic failure.
+        Returns (failed: bool, fail_type: str, fail_message: str).
+        fail_type is "silent" or "overt".
+        Failure rate scales with (2 - cooperation_score) so distressed patients fail more.
+        """
+        profile = FAILURE_PROFILES.get(tool)
+        if profile is None:
+            return False, "", ""
+
+        # Pick sub-profile by route/procedure or "default"
+        if tool == "give_medication":
+            route = params.get("route", "iv")
+            sub = profile.get(route, profile.get("iv", {}))
+        elif tool == "perform_procedure":
+            proc = params.get("procedure", "default")
+            sub = profile.get(proc, profile.get("default", {}))
+        elif tool == "oxygen_therapy":
+            method = params.get("method", "default")
+            sub = profile.get(method, profile.get("default", {}))
+        else:
+            sub = profile.get("default", {})
+
+        if not sub:
+            return False, "", ""
+
+        base_rate = sub.get("rate", 0.0)
+        # Scale by cooperation score: uncooperative/distressed patients fail more
+        cooperation = getattr(patient, "cooperation_score", 1.0)
+        severity = getattr(patient, "severity", 0.3)
+        adjusted_rate = base_rate * (2.0 - cooperation) * (1.0 + severity * 0.5)
+        adjusted_rate = min(adjusted_rate, 0.85)  # cap at 85%
+
+        if rng.random() < adjusted_rate:
+            messages = sub.get("messages", ["Action outcome uncertain."])
+            return True, sub.get("type", "overt"), rng.choice(messages)
+        return False, "", ""
 
     def execute(
         self,
@@ -335,13 +459,16 @@ class ToolExecutor:
         state: FullState,
         rng,
         sim_time_hours: float = 0.0,
-    ) -> Tuple[Dict[str, Any], List[Dict], float, str]:
+    ) -> Tuple[Dict[str, Any], List[Dict], float, str, bool, str, str]:
         """
-        Returns (observation_updates, physiology_effects, cost, message).
+        Returns (observation_updates, physiology_effects, cost, message, action_succeeded, clinical_event, fail_type).
         observation_updates: dict of fields to merge into observation
-        physiology_effects: list of effect dicts for PhysiologyEngine
-        cost: financial cost of this action
+        physiology_effects: list of effect dicts (empty on failure)
+        cost: financial cost (still charged even on failure)
         message: human-readable result description
+        action_succeeded: False when stochastic failure occurred
+        clinical_event: failure description for latest_clinical_event field (None on success)
+        fail_type: "silent" | "overt" | "" (empty on success)
         """
         tool = action.tool
         params = action.parameters
@@ -349,50 +476,66 @@ class ToolExecutor:
         owner = state.owner
         profile = DIAGNOSIS_PROFILES.get(patient.true_diagnosis)
 
+        # --- Roll for stochastic failure on intervention tools ---
+        failed, fail_type, fail_msg = self._roll_failure(tool, params, patient, rng)
+
+        # Tools that cannot fail stochastically (information/decision tools)
+        NO_FAIL_TOOLS = {
+            "check_vitals", "physical_exam", "run_bloodwork", "run_imaging",
+            "collect_result", "contact_owner", "consult_specialist",
+            "decide_triage_route", "make_disposition",
+        }
+
+        if failed and tool not in NO_FAIL_TOOLS:
+            # Still charge the financial cost for the attempt
+            cost_map = {
+                "place_iv_access": 2000.0,
+                "administer_fluid_bolus": 3500.0,
+                "give_medication": 2500.0,
+                "oxygen_therapy": 1500.0,
+                "perform_procedure": 12000.0,
+            }
+            cost = cost_map.get(tool, 0.0)
+            # On silent failure: return a neutral-looking message (agent must check event field)
+            if fail_type == "silent":
+                msg = f"{tool} administered."  # looks like success — trap for open-loop agents
+            else:
+                msg = fail_msg
+            return {}, [], cost, msg, False, fail_msg, fail_type
+
+        # --- Normal execution ---
         if tool == "check_vitals":
-            return self._check_vitals(params, patient)
-
+            updates, effects, cost, msg = self._check_vitals(params, patient)
         elif tool == "physical_exam":
-            return self._physical_exam(params, patient, profile)
-
+            updates, effects, cost, msg = self._physical_exam(params, patient, profile)
         elif tool == "run_bloodwork":
-            return self._run_bloodwork(params, patient, owner, state, rng, sim_time_hours)
-
+            updates, effects, cost, msg = self._run_bloodwork(params, patient, owner, state, rng, sim_time_hours)
         elif tool == "run_imaging":
-            return self._run_imaging(params, patient, owner, state, rng, sim_time_hours)
-
+            updates, effects, cost, msg = self._run_imaging(params, patient, owner, state, rng, sim_time_hours)
         elif tool == "collect_result":
-            return self._collect_result(params, state, sim_time_hours)
-
+            updates, effects, cost, msg = self._collect_result(params, state, sim_time_hours)
         elif tool == "place_iv_access":
-            return self._place_iv(params, patient, owner)
-
+            updates, effects, cost, msg = self._place_iv(params, patient, owner)
         elif tool == "administer_fluid_bolus":
-            return self._fluid_bolus(params, patient, owner)
-
+            updates, effects, cost, msg = self._fluid_bolus(params, patient, owner)
         elif tool == "give_medication":
-            return self._give_medication(params, patient, owner)
-
+            updates, effects, cost, msg = self._give_medication(params, patient, owner)
         elif tool == "oxygen_therapy":
-            return self._oxygen_therapy(params, patient, owner)
-
+            updates, effects, cost, msg = self._oxygen_therapy(params, patient, owner)
         elif tool == "perform_procedure":
-            return self._perform_procedure(params, patient, owner, profile)
-
+            updates, effects, cost, msg = self._perform_procedure(params, patient, owner, profile)
         elif tool == "contact_owner":
-            return self._contact_owner(params, patient, owner)
-
+            updates, effects, cost, msg = self._contact_owner(params, patient, owner)
         elif tool == "consult_specialist":
-            return self._consult_specialist(params, patient, profile, owner)
-
+            updates, effects, cost, msg = self._consult_specialist(params, patient, profile, owner)
         elif tool == "decide_triage_route":
-            return {}, [], 0.0, f"Triage route decided: {params.get('urgency')}"
-
+            updates, effects, cost, msg = {}, [], 0.0, f"Triage route decided: {params.get('urgency')}"
         elif tool == "make_disposition":
-            return {}, [], 0.0, f"Disposition: {params.get('decision')}"
-
+            updates, effects, cost, msg = {}, [], 0.0, f"Disposition: {params.get('decision')}"
         else:
-            return {}, [], 0.0, f"Unknown tool: {tool}"
+            updates, effects, cost, msg = {}, [], 0.0, f"Unknown tool: {tool}"
+
+        return updates, effects, cost, msg, True, None, ""
 
     # -----------------------------------------------------------------------
     # Individual tool implementations

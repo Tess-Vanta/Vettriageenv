@@ -159,6 +159,49 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
             "Avoid thorough spinal exam without sedation — risk of cord injury",
         ],
     ),
+
+    # ------------------------------------------------------------------
+    # HARD: Stochastic failures — closed-loop vs open-loop agents
+    # ------------------------------------------------------------------
+    "hard_stochastic_pancreatitis": TaskSpec(
+        task_id="hard_stochastic_pancreatitis",
+        name="The Uncooperative Patient — Pancreatitis with High Failure Rate",
+        difficulty="hard",
+        description=(
+            "A 7-year-old Border Collie presents with severe acute pancreatitis: vomiting, "
+            "cranial abdominal pain, and lethargy. The dog is highly stressed and uncooperative "
+            "(cooperation_score ≈ 0.4). This dramatically increases failure rates: oral medications "
+            "fail 35%+ of the time, oxygen mask is removed 40%+ of the time, and IV placement "
+            "fails on the first attempt ~35% of the time. "
+            "THE STOCHASTIC DILEMMA: An open-loop agent that issues the same action repeatedly "
+            "without checking 'latest_clinical_event' will think treatments succeeded when they "
+            "silently failed. The patient's pain remains uncontrolled, antiemetics never work, "
+            "and the agent will be surprised by deterioration. "
+            "The correct strategy: CHECK 'action_succeeded' and 'latest_clinical_event' after "
+            "every intervention. Switch oral→IV for pain meds, retry IV access at different site, "
+            "upgrade from mask→nasal_cannula or oxygen_cage when mask is removed. "
+            "Budget: ₹70,000 (sufficient if not wasted on failed retries without dose adjustment). "
+            "Grading explicitly rewards stochastic awareness."
+        ),
+        seed=314,
+        force_diagnosis="pancreatitis_severe",
+        force_species="dog",
+        optimal_route="urgent_stabilise",
+        optimal_disposition="admit_ward",
+        passing_threshold=0.45,
+        max_steps=50,
+        notes=[
+            "COOPERATION SCORE ≈ 0.4 — all failure rates are ~2.5× baseline",
+            "WRONG: give_medication(route=po) → ignore latest_clinical_event → repeat → wonder why patient still painful",
+            "RIGHT: give_medication(route=po) → check action_succeeded → if False, retry with route=iv",
+            "WRONG: oxygen_therapy(method=mask) → never check → patient breathing ambient air",
+            "RIGHT: oxygen_therapy(method=mask) → check → if failed, switch to oxygen_cage or nasal_cannula",
+            "place_iv_access failure: retry at different site (saphenous if cephalic failed)",
+            "IV medications (morphine, maropitant) are the gold standard — skip oral route entirely",
+            "Grader: stochastic_awareness is 10% of score — checks if agent adapted after failures",
+            "Budget ₹70,000: don't waste on repeated failed procedures without adjusting approach",
+        ],
+    ),
 }
 
 

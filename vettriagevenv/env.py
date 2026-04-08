@@ -47,7 +47,7 @@ class VetTriageEnv:
     metadata = {
         "name": "VetTriageEnv",
         "version": "1.0.0",
-        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_polytrauma"],
+        "tasks": ["easy_gdv", "medium_hcm_cat", "hard_imha_budget", "hard_polytrauma", "hard_stochastic_pancreatitis"],
         "reward_range": (-5.0, 5.0),
     }
 
@@ -149,9 +149,10 @@ class VetTriageEnv:
         elapsed_hours = ACTION_TIME_HOURS.get(action.tool, 0.083)
         state.sim_time_hours = round(state.sim_time_hours + elapsed_hours, 4)
 
-        obs_updates, phys_effects, cost, tool_msg = self._tool_executor.execute(
-            action, state, self._rng, sim_time_hours=state.sim_time_hours
-        )
+        obs_updates, phys_effects, cost, tool_msg, action_succeeded, clinical_event, fail_type = \
+            self._tool_executor.execute(
+                action, state, self._rng, sim_time_hours=state.sim_time_hours
+            )
 
         # --- Budget hard-stop: block paid actions when over budget ---
         if cost > 0 and state.owner.budget_limit is not None:
@@ -210,10 +211,17 @@ class VetTriageEnv:
         # --- Fire scheduled events ---
         events.extend(self._check_events(state, meta))
 
-        # --- Log action ---
-        self._action_log.append(action_dict)
+        # --- Log action (record stochastic outcome for grader) ---
+        action_dict_full = {
+            **action_dict,
+            "succeeded": action_succeeded,
+            "clinical_event": clinical_event,
+            "fail_type": fail_type,  # "silent" | "overt" | "" — used by stochastic_awareness grader
+        }
+        self._action_log.append(action_dict_full)
+        failure_tag = " [FAILED]" if not action_succeeded else ""
         state.action_history.append(
-            f"[{state.step}] {action.tool}({action.parameters}) → {tool_msg[:80]}"
+            f"[{state.step}] {action.tool}({action.parameters}){failure_tag} → {tool_msg[:80]}"
         )
 
         # --- Per-step reward ---
@@ -268,6 +276,11 @@ class VetTriageEnv:
         )
 
         obs = self._build_observation(events=events)
+        # Populate stochastic outcome fields
+        obs = obs.model_copy(update={
+            "action_succeeded": action_succeeded,
+            "latest_clinical_event": clinical_event,
+        })
         if done:
             obs = obs.model_copy(update={
                 "episode_done": True,

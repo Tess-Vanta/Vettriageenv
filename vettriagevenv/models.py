@@ -148,6 +148,21 @@ class Observation(BaseModel):
     # Simulated time clock (hours elapsed since case start)
     sim_time_hours: float = 0.0
 
+    # Stochastic intervention outcome — MUST be checked after every action
+    # Agents that ignore this field will assume 100% success and fail to recover.
+    latest_clinical_event: Optional[str] = Field(
+        default=None,
+        description=(
+            "Clinical event from the last action. May indicate failure: "
+            "'patient spat out tablet', 'IV line tissued', 'procedure aborted — patient too distressed'. "
+            "None = action succeeded normally. Agents MUST check this field."
+        )
+    )
+    action_succeeded: bool = Field(
+        default=True,
+        description="False when the last action failed stochastically. Check latest_clinical_event for details."
+    )
+
     # Terminal info
     terminal_reason: Optional[str] = None
 
@@ -202,7 +217,7 @@ class PatientInternalState(BaseModel):
 
 
 class OwnerInternalState(BaseModel):
-    budget_limit: float
+    budget_limit: Optional[float]
     budget_spent: float = 0.0
     contact_established: bool = False
     consent_items: List[str] = Field(default_factory=list)
