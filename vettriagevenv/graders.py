@@ -316,7 +316,8 @@ def grade_episode(state: FullState, meta: dict, action_log: list) -> GradeResult
         breakdown["clinical_gestalt"] = gestalt_score
 
     total = sum(breakdown.values())
-    total = max(0.0, min(1.0, total))
+    # Clamp strictly within (0, 1) — exclusive bounds required by OpenEnv validator
+    total = max(0.01, min(0.99, total))
 
     return GradeResult(
         score=round(total, 3),
