@@ -47,71 +47,192 @@ TOOL_PARAM_HINTS = {
     "make_disposition":       '{"disposition": "admit_icu"}',
 }
 
-# Emojis and colours per task
-# Images chosen to accurately reflect the clinical scenario
+# SVG illustrations per task — inline, no external requests, always render
+TASK_SVGS = {
+    "easy_gdv": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <ellipse cx="200" cy="110" rx="90" ry="55" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+  <ellipse cx="200" cy="105" rx="75" ry="42" fill="#1e40af" opacity="0.5"/>
+  <circle cx="130" cy="75" r="28" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+  <ellipse cx="130" cy="62" rx="12" ry="8" fill="#2563eb"/>
+  <ellipse cx="122" cy="58" rx="5" ry="7" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <ellipse cx="138" cy="58" rx="5" ry="7" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <circle cx="122" cy="76" r="3" fill="#93c5fd"/>
+  <circle cx="138" cy="76" r="3" fill="#93c5fd"/>
+  <path d="M115 83 Q130 88 145 83" stroke="#93c5fd" stroke-width="2" fill="none"/>
+  <rect x="270" y="85" width="8" height="50" rx="4" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="285" y="70" width="8" height="65" rx="4" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="300" y="90" width="8" height="45" rx="4" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="200" y="168" text-anchor="middle" fill="#60a5fa" font-size="13" font-family="monospace" font-weight="bold">GDV — ACUTE ABDOMEN</text>
+  <text x="310" y="60" fill="#ef4444" font-size="11" font-family="monospace">BLOAT ↑</text>
+  <path d="M185 90 Q200 70 215 90" stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="4"/>
+</svg>""",
+
+    "medium_hcm_cat": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <ellipse cx="190" cy="115" rx="70" ry="45" fill="#1a1f3a" stroke="#a78bfa" stroke-width="2"/>
+  <circle cx="145" cy="78" r="30" fill="#1a1f3a" stroke="#a78bfa" stroke-width="2"/>
+  <polygon points="133,52 140,35 147,52" fill="#a78bfa"/>
+  <polygon points="148,52 155,35 162,52" fill="#a78bfa"/>
+  <circle cx="137" cy="80" r="4" fill="#7c3aed"/>
+  <circle cx="153" cy="80" r="4" fill="#7c3aed"/>
+  <path d="M130 90 Q145 96 160 90" stroke="#c4b5fd" stroke-width="2" fill="none"/>
+  <path d="M115 78 L95 72 M115 82 L93 82 M115 86 L95 90" stroke="#a78bfa" stroke-width="1.5"/>
+  <path d="M165 78 L185 72 M165 82 L187 82 M165 86 L185 90" stroke="#a78bfa" stroke-width="1.5"/>
+  <path d="M250 60 Q270 40 290 60 Q310 80 290 95 Q270 110 250 95 Q230 80 250 60Z" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+  <path d="M260 77 L270 67 L275 75 L280 60 L285 85 L290 70 L295 77" stroke="#ef4444" stroke-width="2" fill="none"/>
+  <text x="270" y="125" text-anchor="middle" fill="#f472b6" font-size="10" font-family="monospace">PLEURAL EFFUSION</text>
+  <text x="200" y="168" text-anchor="middle" fill="#a78bfa" font-size="13" font-family="monospace" font-weight="bold">HCM — DYSPNOEIC CAT</text>
+  <path d="M175 105 Q185 90 195 105 Q200 95 210 105" stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="3"/>
+  <text x="195" y="100" fill="#f59e0b" font-size="9" font-family="monospace">laboured</text>
+</svg>""",
+
+    "hard_imha_budget": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <ellipse cx="180" cy="115" rx="80" ry="48" fill="#1c1010" stroke="#dc2626" stroke-width="2"/>
+  <circle cx="130" cy="78" r="32" fill="#1c1010" stroke="#dc2626" stroke-width="2"/>
+  <ellipse cx="130" cy="65" rx="13" ry="9" fill="#2d1515"/>
+  <ellipse cx="121" cy="60" rx="5" ry="7" fill="#1c1010" stroke="#dc2626" stroke-width="1.5"/>
+  <ellipse cx="139" cy="60" rx="5" ry="7" fill="#1c1010" stroke="#dc2626" stroke-width="1.5"/>
+  <circle cx="121" cy="78" r="4" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="139" cy="78" r="4" fill="#fbbf24" opacity="0.8"/>
+  <path d="M115 88 Q130 94 145 88" stroke="#fbbf24" stroke-width="2" fill="none"/>
+  <circle cx="310" cy="75" r="35" fill="#1c1c10" stroke="#fbbf24" stroke-width="2"/>
+  <text x="310" y="65" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="monospace" font-weight="bold">₹38,000</text>
+  <text x="310" y="78" text-anchor="middle" fill="#ef4444" font-size="10" font-family="monospace">BUDGET</text>
+  <rect x="285" y="88" width="50" height="8" rx="4" fill="#1f2937"/>
+  <rect x="285" y="88" width="18" height="8" rx="4" fill="#ef4444"/>
+  <text x="310" y="108" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="monospace">35% used</text>
+  <text x="200" y="168" text-anchor="middle" fill="#dc2626" font-size="13" font-family="monospace" font-weight="bold">IMHA — PALE/ICTERIC</text>
+  <circle cx="230" cy="90" r="6" fill="#fbbf24" opacity="0.6"/>
+  <circle cx="245" cy="100" r="4" fill="#fbbf24" opacity="0.4"/>
+  <circle cx="220" cy="108" r="5" fill="#fbbf24" opacity="0.5"/>
+</svg>""",
+
+    "hard_polytrauma": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <rect x="0" y="0" width="400" height="180" fill="url(#trauma-bg)" opacity="0.3"/>
+  <ellipse cx="185" cy="118" rx="85" ry="46" fill="#1a1a2e" stroke="#f59e0b" stroke-width="2"/>
+  <circle cx="130" cy="78" r="30" fill="#1a1a2e" stroke="#f59e0b" stroke-width="2"/>
+  <ellipse cx="130" cy="65" rx="12" ry="8" fill="#2a2a1e"/>
+  <ellipse cx="121" cy="60" rx="5" ry="7" fill="#1a1a2e" stroke="#f59e0b" stroke-width="1.5"/>
+  <ellipse cx="139" cy="60" rx="5" ry="7" fill="#1a1a2e" stroke="#f59e0b" stroke-width="1.5"/>
+  <circle cx="121" cy="78" r="3" fill="#fcd34d"/>
+  <circle cx="139" cy="78" r="3" fill="#fcd34d"/>
+  <line x1="100" y1="70" x2="80" y2="55" stroke="#ef4444" stroke-width="3"/>
+  <line x1="105" y1="75" x2="82" y2="68" stroke="#ef4444" stroke-width="2"/>
+  <rect x="270" y="50" width="60" height="80" rx="4" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="278" y="58" width="44" height="55" rx="2" fill="#1e293b"/>
+  <path d="M285 85 Q300 65 315 85" stroke="#ef4444" stroke-width="2" fill="none"/>
+  <path d="M285 100 Q295 88 305 95 Q315 100 318 90" stroke="#ef4444" stroke-width="1.5" fill="none"/>
+  <text x="300" y="122" text-anchor="middle" fill="#f59e0b" font-size="8" font-family="monospace">RADIOGRAPH</text>
+  <polygon points="355,30 365,50 345,50" fill="#ef4444" opacity="0.9"/>
+  <text x="355" y="46" text-anchor="middle" fill="white" font-size="10" font-weight="bold">!</text>
+  <text x="200" y="168" text-anchor="middle" fill="#f59e0b" font-size="13" font-family="monospace" font-weight="bold">POLYTRAUMA — HBC</text>
+</svg>""",
+
+    "hard_stochastic_pancreatitis": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <ellipse cx="175" cy="118" rx="80" ry="44" fill="#1a1f1a" stroke="#22c55e" stroke-width="2"/>
+  <circle cx="120" cy="78" r="30" fill="#1a1f1a" stroke="#22c55e" stroke-width="2"/>
+  <ellipse cx="120" cy="65" rx="14" ry="9" fill="#1e2a1e"/>
+  <ellipse cx="110" cy="60" rx="5" ry="8" fill="#1a1f1a" stroke="#22c55e" stroke-width="1.5"/>
+  <ellipse cx="130" cy="60" rx="5" ry="8" fill="#1a1f1a" stroke="#22c55e" stroke-width="1.5"/>
+  <circle cx="112" cy="78" r="4" fill="#4ade80"/>
+  <circle cx="128" cy="78" r="4" fill="#4ade80"/>
+  <path d="M105 88 Q120 82 135 88" stroke="#ef4444" stroke-width="2" fill="none"/>
+  <text x="290" y="55" text-anchor="middle" fill="#ef4444" font-size="28" font-family="monospace" font-weight="bold">⚡</text>
+  <rect x="250" y="68" width="80" height="18" rx="4" fill="#1e293b" stroke="#ef4444" stroke-width="1"/>
+  <text x="290" y="81" text-anchor="middle" fill="#f87171" font-size="9" font-family="monospace">ACTION FAILED</text>
+  <rect x="250" y="92" width="80" height="18" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+  <text x="290" y="105" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="monospace">RETRY DIFF ROUTE</text>
+  <rect x="250" y="116" width="80" height="18" rx="4" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
+  <text x="290" y="129" text-anchor="middle" fill="#4ade80" font-size="9" font-family="monospace">cooperation: 0.4</text>
+  <text x="200" y="168" text-anchor="middle" fill="#22c55e" font-size="13" font-family="monospace" font-weight="bold">PANCREATITIS — STOCHASTIC</text>
+</svg>""",
+
+    "hard_parvovirus_day1": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <ellipse cx="160" cy="125" rx="65" ry="38" fill="#1a1020" stroke="#d946ef" stroke-width="2"/>
+  <circle cx="115" cy="88" r="26" fill="#1a1020" stroke="#d946ef" stroke-width="2"/>
+  <ellipse cx="115" cy="77" rx="11" ry="7" fill="#251030"/>
+  <ellipse cx="107" cy="73" rx="4" ry="6" fill="#1a1020" stroke="#d946ef" stroke-width="1.5"/>
+  <ellipse cx="123" cy="73" rx="4" ry="6" fill="#1a1020" stroke="#d946ef" stroke-width="1.5"/>
+  <circle cx="108" cy="88" r="3" fill="#e879f9"/>
+  <circle cx="122" cy="88" r="3" fill="#e879f9"/>
+  <rect x="250" y="45" width="95" height="100" rx="8" fill="#0f172a" stroke="#d946ef" stroke-width="2"/>
+  <rect x="260" y="55" width="75" height="30" rx="4" fill="#1e293b"/>
+  <text x="297" y="68" text-anchor="middle" fill="#a855f7" font-size="9" font-family="monospace">SNAP PARVO</text>
+  <text x="297" y="80" text-anchor="middle" fill="#ef4444" font-size="14" font-family="monospace" font-weight="bold">NEGATIVE</text>
+  <text x="297" y="100" text-anchor="middle" fill="#f59e0b" font-size="8" font-family="monospace">⚠ 25% FALSE NEG</text>
+  <text x="297" y="112" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="monospace">on day 1 only</text>
+  <rect x="260" y="120" width="75" height="16" rx="3" fill="#7f1d1d"/>
+  <text x="297" y="131" text-anchor="middle" fill="#fca5a5" font-size="8" font-family="monospace">TREAT ANYWAY →</text>
+  <text x="200" y="168" text-anchor="middle" fill="#d946ef" font-size="13" font-family="monospace" font-weight="bold">PARVOVIRUS DAY 1</text>
+</svg>""",
+
+    "hard_nosocomial_chf_ward": """<svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="180" fill="#0d1b2a"/>
+  <rect x="60" y="100" width="160" height="55" rx="4" fill="#0f172a" stroke="#0891b2" stroke-width="2"/>
+  <rect x="70" y="110" width="140" height="35" rx="2" fill="#1e293b"/>
+  <ellipse cx="140" cy="100" rx="55" ry="30" fill="#0f172a" stroke="#0891b2" stroke-width="2"/>
+  <circle cx="108" cy="85" r="22" fill="#0f172a" stroke="#0891b2" stroke-width="1.5"/>
+  <circle cx="100" cy="80" r="3" fill="#7dd3fc"/>
+  <circle cx="116" cy="80" r="3" fill="#7dd3fc"/>
+  <line x1="60" y1="80" x2="60" y2="30" stroke="#0891b2" stroke-width="2"/>
+  <rect x="50" y="25" width="20" height="30" rx="3" fill="#0e7490" stroke="#0891b2" stroke-width="1.5"/>
+  <line x1="60" y1="55" x2="75" y2="90" stroke="#0891b2" stroke-width="1.5" stroke-dasharray="4"/>
+  <rect x="270" y="30" width="90" height="120" rx="6" fill="#0f172a" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="315" y="50" text-anchor="middle" fill="#7dd3fc" font-size="9" font-family="monospace">INFECTION RISK</text>
+  <rect x="280" y="55" width="70" height="12" rx="3" fill="#064e3b"/>
+  <text x="315" y="65" text-anchor="middle" fill="#6ee7b7" font-size="8" font-family="monospace">24h: 10% ✓</text>
+  <rect x="280" y="72" width="70" height="12" rx="3" fill="#78350f"/>
+  <text x="315" y="82" text-anchor="middle" fill="#fcd34d" font-size="8" font-family="monospace">48h: 25% ⚠</text>
+  <rect x="280" y="89" width="70" height="12" rx="3" fill="#7f1d1d"/>
+  <text x="315" y="99" text-anchor="middle" fill="#fca5a5" font-size="8" font-family="monospace">72h: 50% ✗</text>
+  <rect x="280" y="106" width="70" height="12" rx="3" fill="#450a0a"/>
+  <text x="315" y="116" text-anchor="middle" fill="#ef4444" font-size="8" font-family="monospace">96h: 75% ✗✗</text>
+  <text x="315" y="136" text-anchor="middle" fill="#f59e0b" font-size="9" font-family="monospace">DISCHARGE</text>
+  <text x="315" y="148" text-anchor="middle" fill="#f59e0b" font-size="9" font-family="monospace">ASAP ↓</text>
+  <text x="170" y="168" text-anchor="middle" fill="#0891b2" font-size="13" font-family="monospace" font-weight="bold">CHF WARD — NOSOCOMIAL</text>
+</svg>""",
+}
+
 TASK_META = {
     "easy_gdv": {
-        "emoji": "🐕",
-        "label": "GDV Emergency",
-        "badge": "🟢 EASY",
-        # German Shepherd with bloated/distended abdomen appearance
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/German_Shepherd_-_DSC_0346_%2810096362833%29.jpg/640px-German_Shepherd_-_DSC_0346_%2810096362833%29.jpg",
-        "desc": "German Shepherd with acute gastric dilatation-volvulus. Distended abdomen, unproductive retching. Clear signals — baseline test.",
+        "emoji": "🐕", "label": "GDV Emergency", "badge": "🟢 EASY",
+        "desc": "German Shepherd with acute gastric dilatation-volvulus. Distended abdomen, unproductive retching.",
         "tip": "💡 Check cardiovascular vitals → abdominal exam → immediate_resuscitation → admit_icu. NEVER discharge a GDV.",
     },
     "medium_hcm_cat": {
-        "emoji": "🐈",
-        "label": "HCM Cat",
-        "badge": "🟡 MEDIUM",
-        # Cat in respiratory distress / open-mouth breathing
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/640px-Image_created_with_a_mobile_phone.png",
+        "emoji": "🐈", "label": "HCM Cat", "badge": "🟡 MEDIUM",
         "desc": "Dyspnoeic cat with hypertrophic cardiomyopathy. Rapid laboured breathing, pleural effusion suspected.",
-        "tip": "💡 Do NOT give crystalloid fluids — causes pulmonary oedema. Use furosemide IV. Thoracocentesis if effusion confirmed.",
+        "tip": "💡 Do NOT give crystalloid — causes pulmonary oedema. Use furosemide IV. Thoracocentesis if effusion confirmed.",
     },
     "hard_imha_budget": {
-        "emoji": "🩸",
-        "label": "IMHA Budget",
-        "badge": "🔴 HARD",
-        # Pale/yellow mucous membranes — jaundice/anaemia in dog
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/YellowLabradorLooking_new.jpg/640px-YellowLabradorLooking_new.jpg",
+        "emoji": "🩸", "label": "IMHA Budget", "badge": "🔴 HARD",
         "desc": "Immune haemolytic anaemia — pale/icteric mucous membranes, weakness, tachycardia. Hard ₹38,000 budget.",
-        "tip": "💡 Contact owner FIRST to learn budget. CBC + lactate only. Blood products over crystalloid. Skip expensive imaging.",
+        "tip": "💡 Contact owner FIRST to learn budget. CBC + lactate only. Blood products over crystalloid. Skip imaging.",
     },
     "hard_polytrauma": {
-        "emoji": "🚑",
-        "label": "Polytrauma HBC",
-        "badge": "🔴 HARD",
-        # Dog with bandage / injury — trauma patient
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Labrador_Retriever_portrait.jpg/640px-Labrador_Retriever_portrait.jpg",
+        "emoji": "🚑", "label": "Polytrauma HBC", "badge": "🔴 HARD",
         "desc": "Hit-by-car dog. Multiple injuries — pneumothorax, haemoabdomen, fractures. Mid-episode seizure.",
         "tip": "💡 Image thorax + abdomen URGENTLY. Prefer colloid over crystalloid. Prepare for seizure at step ~8.",
     },
     "hard_stochastic_pancreatitis": {
-        "emoji": "⚡",
-        "label": "Stochastic Pancreatitis",
-        "badge": "🔴 HARD",
-        # Border Collie — stressed, uncooperative
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Border_Collie_sheep.jpg/640px-Border_Collie_sheep.jpg",
-        "desc": "Stress-reactive Border Collie with severe pancreatitis. Low cooperation (0.4) — actions fail silently ~2.5× more often.",
+        "emoji": "⚡", "label": "Stochastic Pancreatitis", "badge": "🔴 HARD",
+        "desc": "Stress-reactive Border Collie with severe pancreatitis. Cooperation 0.4 — actions fail silently 2.5× more.",
         "tip": "💡 Check action_succeeded after EVERY step. If tool failed silently, switch route/method/site immediately.",
     },
     "hard_parvovirus_day1": {
-        "emoji": "🦠",
-        "label": "Parvo Day 1",
-        "badge": "🔴 HARD",
-        # Young puppy — parvovirus affects unvaccinated puppies
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Dog_Breeds.jpg/640px-Dog_Breeds.jpg",
-        "desc": "Unvaccinated puppy: haemorrhagic diarrhoea, vomiting, shock. SNAP parvo test has 25% false-negative rate on day 1.",
-        "tip": "💡 Negative SNAP ≠ no parvo on day 1. Leukopenia + bloody diarrhoea = treat empirically. Clinical gestalt over the test.",
+        "emoji": "🦠", "label": "Parvo Day 1", "badge": "🔴 HARD",
+        "desc": "Unvaccinated puppy: haemorrhagic diarrhoea, vomiting, shock. SNAP test 25% false-negative on day 1.",
+        "tip": "💡 Negative SNAP ≠ no parvo on day 1. Leukopenia + bloody diarrhoea = treat empirically regardless.",
     },
     "hard_nosocomial_chf_ward": {
-        "emoji": "🏥",
-        "label": "Nosocomial CHF",
-        "badge": "🔴 HARD",
-        # Dog on IV drip in hospital ward setting
-        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Golden_Retriever_in_Vietnam.jpg/640px-Golden_Retriever_in_Vietnam.jpg",
-        "desc": "CHF dog already 20h into ward stay — partially stabilised. Hospital-acquired infection risk escalates every 24h.",
-        "tip": "💡 Patient is stable — discharge ASAP. Infection risk: 10%@24h → 25%@48h → 50%@72h. Don't over-monitor.",
+        "emoji": "🏥", "label": "Nosocomial CHF", "badge": "🔴 HARD",
+        "desc": "CHF dog 20h into ward stay — partially stabilised. Hospital-acquired infection risk escalates every 24h.",
+        "tip": "💡 Patient is stable — discharge ASAP. Risk: 10%@24h → 25%@48h → 50%@72h. Don't over-monitor.",
     },
 }
 
@@ -390,9 +511,8 @@ def _task_card(task_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 def on_task_change(task_id: str):
-    m = TASK_META.get(task_id, {})
-    img = m.get("img", "")
-    img_html = f'<img src="{img}" style="width:100%;height:165px;object-fit:cover;border-radius:10px;margin-bottom:4px" />' if img else ""
+    svg = TASK_SVGS.get(task_id, "")
+    img_html = f'<div style="width:100%;margin-bottom:4px">{svg}</div>' if svg else ""
     card = _task_card(task_id)
     return img_html, card
 
@@ -589,6 +709,7 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
         )
 
         tool, params, reasoning = "check_vitals", {"systems": ["cardiovascular"]}, "fallback"
+        llm_error = None
         try:
             resp = client.chat.completions.create(
                 model=model,
@@ -608,7 +729,29 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
             params = parsed.get("parameters", {})
             reasoning = parsed.get("reasoning", "")
         except Exception as e:
-            reasoning = f"parse error: {e}"
+            err_str = str(e)
+            # Detect quota exhaustion / billing errors — stop immediately
+            if any(k in err_str for k in ("402", "depleted", "quota", "billing", "credit", "payment")):
+                llm_error = err_str
+            else:
+                reasoning = f"parse error: {e}"
+
+        if llm_error:
+            return f"""
+            <div style="background:#450a0a;border:1px solid #991b1b;border-radius:12px;padding:20px;text-align:center">
+              <div style="font-size:1.3rem;font-weight:800;color:#fca5a5;margin-bottom:8px">💳 LLM Quota Exhausted</div>
+              <div style="color:#f87171;font-size:0.88rem;margin-bottom:12px">
+                The model endpoint returned a quota/billing error after {len(rewards)} steps.
+              </div>
+              <div style="background:#1c0505;border-radius:8px;padding:10px;font-family:monospace;font-size:0.78rem;color:#fca5a5;text-align:left;word-break:break-all">
+                {llm_error[:400]}
+              </div>
+              <div style="margin-top:12px;color:#94a3b8;font-size:0.82rem">
+                💡 Use a paid endpoint, switch to a free model (e.g. mistralai/Mistral-7B-Instruct-v0.3),
+                or set a different API_BASE_URL.
+              </div>
+            </div>
+            """
 
         action = Action(tool=tool, parameters=params, reasoning=reasoning)
         obs, reward, done, info = env.step(action)
@@ -692,8 +835,7 @@ def build_ui() -> gr.Blocks:
                 )
 
                 task_img = gr.HTML(
-                    f'<img src="{default_meta["img"]}" style="width:100%;height:165px;'
-                    f'object-fit:cover;border-radius:10px;margin-bottom:4px" />'
+                    f'<div style="width:100%;margin-bottom:4px">{TASK_SVGS.get(default_task, "")}</div>'
                 )
 
                 task_card_html = gr.HTML(_task_card(default_task))
