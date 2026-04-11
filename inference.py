@@ -265,6 +265,8 @@ def run_task(client: OpenAI, task_id: str) -> float:
                 break
 
     finally:
+        # Clamp strictly within (0, 1) — OpenEnv validator rejects 0.0 and 1.0 exactly
+        score = max(0.01, min(0.99, score))
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
     return score
