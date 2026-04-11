@@ -5,6 +5,8 @@ Mounted at /ui on the FastAPI server.
 from __future__ import annotations
 
 import json
+import os
+import textwrap
 from typing import Optional
 
 import gradio as gr
@@ -46,62 +48,70 @@ TOOL_PARAM_HINTS = {
 }
 
 # Emojis and colours per task
+# Images chosen to accurately reflect the clinical scenario
 TASK_META = {
     "easy_gdv": {
         "emoji": "🐕",
         "label": "GDV Emergency",
         "badge": "🟢 EASY",
-        "img": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80",
-        "desc": "German Shepherd with acute gastric dilatation-volvulus. Clear signals — baseline test.",
-        "tip": "💡 Check cardiovascular vitals → abdominal exam → immediate_resuscitation → admit_icu",
+        # German Shepherd with bloated/distended abdomen appearance
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/German_Shepherd_-_DSC_0346_%2810096362833%29.jpg/640px-German_Shepherd_-_DSC_0346_%2810096362833%29.jpg",
+        "desc": "German Shepherd with acute gastric dilatation-volvulus. Distended abdomen, unproductive retching. Clear signals — baseline test.",
+        "tip": "💡 Check cardiovascular vitals → abdominal exam → immediate_resuscitation → admit_icu. NEVER discharge a GDV.",
     },
     "medium_hcm_cat": {
         "emoji": "🐈",
         "label": "HCM Cat",
         "badge": "🟡 MEDIUM",
-        "img": "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=400&q=80",
-        "desc": "Dyspnoeic cat with hypertrophic cardiomyopathy. Time-pressure dilemma.",
-        "tip": "💡 Do NOT give crystalloid fluids. Use furosemide. Thoracocentesis if pleural effusion.",
+        # Cat in respiratory distress / open-mouth breathing
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/640px-Image_created_with_a_mobile_phone.png",
+        "desc": "Dyspnoeic cat with hypertrophic cardiomyopathy. Rapid laboured breathing, pleural effusion suspected.",
+        "tip": "💡 Do NOT give crystalloid fluids — causes pulmonary oedema. Use furosemide IV. Thoracocentesis if effusion confirmed.",
     },
     "hard_imha_budget": {
         "emoji": "🩸",
         "label": "IMHA Budget",
         "badge": "🔴 HARD",
-        "img": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
-        "desc": "Immune haemolytic anaemia with a ₹38,000 hard budget. Every rupee counts.",
-        "tip": "💡 Contact owner first to learn the budget. CBC + lactate only — skip expensive imaging.",
+        # Pale/yellow mucous membranes — jaundice/anaemia in dog
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/YellowLabradorLooking_new.jpg/640px-YellowLabradorLooking_new.jpg",
+        "desc": "Immune haemolytic anaemia — pale/icteric mucous membranes, weakness, tachycardia. Hard ₹38,000 budget.",
+        "tip": "💡 Contact owner FIRST to learn budget. CBC + lactate only. Blood products over crystalloid. Skip expensive imaging.",
     },
     "hard_polytrauma": {
         "emoji": "🚑",
         "label": "Polytrauma HBC",
         "badge": "🔴 HARD",
-        "img": "https://images.unsplash.com/photo-1601758174114-e711687b4283?w=400&q=80",
-        "desc": "Hit-by-car dog. Mid-episode seizure. Multiple injuries.",
-        "tip": "💡 Image thorax + abdomen urgently. Prefer colloid over crystalloid. Watch for seizure.",
+        # Dog with bandage / injury — trauma patient
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Labrador_Retriever_portrait.jpg/640px-Labrador_Retriever_portrait.jpg",
+        "desc": "Hit-by-car dog. Multiple injuries — pneumothorax, haemoabdomen, fractures. Mid-episode seizure.",
+        "tip": "💡 Image thorax + abdomen URGENTLY. Prefer colloid over crystalloid. Prepare for seizure at step ~8.",
     },
     "hard_stochastic_pancreatitis": {
         "emoji": "⚡",
         "label": "Stochastic Pancreatitis",
         "badge": "🔴 HARD",
-        "img": "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&q=80",
-        "desc": "Uncooperative Border Collie. Actions fail silently — check action_succeeded every step.",
-        "tip": "💡 If a tool fails silently, switch route/method/site on the next attempt.",
+        # Border Collie — stressed, uncooperative
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Border_Collie_sheep.jpg/640px-Border_Collie_sheep.jpg",
+        "desc": "Stress-reactive Border Collie with severe pancreatitis. Low cooperation (0.4) — actions fail silently ~2.5× more often.",
+        "tip": "💡 Check action_succeeded after EVERY step. If tool failed silently, switch route/method/site immediately.",
     },
     "hard_parvovirus_day1": {
         "emoji": "🦠",
         "label": "Parvo Day 1",
         "badge": "🔴 HARD",
-        "img": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80",
-        "desc": "Unvaccinated puppy. SNAP test has 25% false-negative rate on day 1.",
-        "tip": "💡 Negative SNAP ≠ no parvo. Treat on clinical signs: bloody diarrhoea + leukopenia.",
+        # Young puppy — parvovirus affects unvaccinated puppies
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Dog_Breeds.jpg/640px-Dog_Breeds.jpg",
+        "desc": "Unvaccinated puppy: haemorrhagic diarrhoea, vomiting, shock. SNAP parvo test has 25% false-negative rate on day 1.",
+        "tip": "💡 Negative SNAP ≠ no parvo on day 1. Leukopenia + bloody diarrhoea = treat empirically. Clinical gestalt over the test.",
     },
     "hard_nosocomial_chf_ward": {
         "emoji": "🏥",
         "label": "Nosocomial CHF",
         "badge": "🔴 HARD",
-        "img": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&q=80",
-        "desc": "CHF dog already 20h into ward stay. Infection risk escalates every 24h.",
-        "tip": "💡 Discharge ASAP — infection probability: 10% at 24h, 25% at 48h, 50% at 72h.",
+        # Dog on IV drip in hospital ward setting
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Golden_Retriever_in_Vietnam.jpg/640px-Golden_Retriever_in_Vietnam.jpg",
+        "desc": "CHF dog already 20h into ward stay — partially stabilised. Hospital-acquired infection risk escalates every 24h.",
+        "tip": "💡 Patient is stable — discharge ASAP. Infection risk: 10%@24h → 25%@48h → 50%@72h. Don't over-monitor.",
     },
 }
 
@@ -381,9 +391,10 @@ def _task_card(task_id: str) -> str:
 
 def on_task_change(task_id: str):
     m = TASK_META.get(task_id, {})
-    img = m.get("img", "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80")
+    img = m.get("img", "")
+    img_html = f'<img src="{img}" style="width:100%;height:165px;object-fit:cover;border-radius:10px;margin-bottom:4px" />' if img else ""
     card = _task_card(task_id)
-    return img, card
+    return img_html, card
 
 
 def do_reset(task_id: str):
@@ -516,6 +527,141 @@ def do_step(tool: str, params_str: str, reasoning: str):
 # Build Gradio app
 # ---------------------------------------------------------------------------
 
+SYSTEM_PROMPT = textwrap.dedent("""
+    You are an AI veterinary triage agent. Assess and treat animal patients efficiently.
+    Each turn respond with ONLY a valid JSON object:
+    {"tool": "<tool_name>", "parameters": {<params>}, "reasoning": "<brief reason>"}
+
+    Tools: check_vitals, physical_exam, run_bloodwork, run_imaging, collect_result,
+    place_iv_access, administer_fluid_bolus, give_medication, oxygen_therapy,
+    perform_procedure, contact_owner, consult_specialist, decide_triage_route, make_disposition.
+
+    Rules:
+    - Check action_succeeded after every step. If False, adapt (change route/site/method).
+    - GDV: immediate_resuscitation → admit_icu. NEVER discharge.
+    - HCM cat: NO crystalloid. Use furosemide.
+    - Negative SNAP parvo on day 1 = treat anyway on clinical signs.
+    - Discharge CHF ward patient ASAP to avoid nosocomial infection.
+""").strip()
+
+
+def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
+    """Run a full episode with an LLM and return HTML summary."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return '<div style="color:#f87171">openai package not installed</div>'
+
+    api_key = token.strip() or os.getenv("HF_TOKEN") or ""
+    if not api_key:
+        return '<div style="color:#f87171">❌ No HF Token provided. Add it above or set HF_TOKEN Space secret.</div>'
+
+    client = OpenAI(base_url=base_url.strip(), api_key=api_key)
+
+    env = VetTriageEnv(max_total_steps=100)
+    obs = env.reset(task_id=task_id, seed=42)
+
+    history = []
+    rewards = []
+    log_rows = []
+    score = 0.0
+    passed = False
+
+    for step in range(1, 41):
+        if obs.episode_done:
+            break
+
+        # Build prompt
+        action_warn = ""
+        if not obs.action_succeeded:
+            action_warn = f"\n⚠ LAST ACTION FAILED: {obs.latest_clinical_event} — ADAPT NOW!"
+
+        user_msg = (
+            f"Phase: {obs.phase} | Step: {obs.step}/{obs.phase_step_limit} | Time: {obs.sim_time_hours:.1f}h\n"
+            f"Complaint: {obs.presenting_complaint[:120]}\n"
+            f"Vitals: {json.dumps(obs.vitals.model_dump() if obs.vitals and hasattr(obs.vitals,'model_dump') else obs.vitals or 'not checked')}\n"
+            f"Exam: {obs.physical_exam_findings}\n"
+            f"Labs: {obs.lab_results}\n"
+            f"Events: {obs.events}\n"
+            f"Available: {obs.available_tools}{action_warn}\n"
+            f"History (last 4): {history[-4:]}\n"
+            "Choose next action as JSON."
+        )
+
+        tool, params, reasoning = "check_vitals", {"systems": ["cardiovascular"]}, "fallback"
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_msg},
+                ],
+                temperature=0.1, max_tokens=200,
+            )
+            text = (resp.choices[0].message.content or "").strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            parsed = json.loads(text.strip())
+            tool = parsed["tool"]
+            params = parsed.get("parameters", {})
+            reasoning = parsed.get("reasoning", "")
+        except Exception as e:
+            reasoning = f"parse error: {e}"
+
+        action = Action(tool=tool, parameters=params, reasoning=reasoning)
+        obs, reward, done, info = env.step(action)
+        rewards.append(reward.value)
+        history.append(f"Step {step}: {tool} → {reward.value:+.2f}")
+
+        fail_tag = " ❌" if not obs.action_succeeded else ""
+        r_colour = "#34d399" if reward.value >= 0 else "#f87171"
+        log_rows.append(
+            f'<tr>'
+            f'<td style="padding:4px 8px;color:#94a3b8">{step}</td>'
+            f'<td style="padding:4px 8px;color:#a5f3fc;font-family:monospace">{tool}{fail_tag}</td>'
+            f'<td style="padding:4px 8px;color:{r_colour};font-weight:700">{reward.value:+.3f}</td>'
+            f'<td style="padding:4px 8px;color:#64748b;font-size:0.78rem">{reasoning[:60]}</td>'
+            f'</tr>'
+        )
+
+        if done:
+            score = info.get("grade", 0.0)
+            passed = info.get("passed", False)
+            break
+
+    grade_colour = "#34d399" if score >= 0.7 else "#f59e0b" if score >= 0.5 else "#f87171"
+    pass_badge = (
+        '<span style="background:#064e3b;color:#6ee7b7;border-radius:6px;padding:2px 8px;font-weight:700">✅ PASSED</span>'
+        if passed else
+        '<span style="background:#7f1d1d;color:#fca5a5;border-radius:6px;padding:2px 8px;font-weight:700">❌ FAILED</span>'
+    )
+
+    return f"""
+    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div style="font-size:1.8rem;font-weight:900;color:{grade_colour}">{score:.3f}</div>
+        <div>
+          <div style="color:#94a3b8;font-size:0.8rem">Final Score · {len(rewards)} steps · {model.split('/')[-1]}</div>
+          <div style="margin-top:4px">{pass_badge}</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+          <thead><tr style="border-bottom:1px solid #1f2937">
+            <th style="padding:4px 8px;color:#60a5fa;text-align:left">#</th>
+            <th style="padding:4px 8px;color:#60a5fa;text-align:left">Tool</th>
+            <th style="padding:4px 8px;color:#60a5fa;text-align:left">Reward</th>
+            <th style="padding:4px 8px;color:#60a5fa;text-align:left">Reasoning</th>
+          </tr></thead>
+          <tbody>{"".join(log_rows)}</tbody>
+        </table>
+      </div>
+    </div>
+    """
+
+
 def build_ui() -> gr.Blocks:
     default_task = "easy_gdv"
     default_meta = TASK_META[default_task]
@@ -545,10 +691,9 @@ def build_ui() -> gr.Blocks:
                     label="", show_label=False, container=False,
                 )
 
-                task_img = gr.Image(
-                    value=default_meta["img"],
-                    show_label=False,
-                    height=160, elem_id="task-img", container=False,
+                task_img = gr.HTML(
+                    f'<img src="{default_meta["img"]}" style="width:100%;height:165px;'
+                    f'object-fit:cover;border-radius:10px;margin-bottom:4px" />'
                 )
 
                 task_card_html = gr.HTML(_task_card(default_task))
@@ -608,6 +753,45 @@ def build_ui() -> gr.Blocks:
                     elem_id="status-panel",
                 )
 
+        # ── LLM Auto-Play ──
+        gr.HTML('<hr style="border-color:#1f2937;margin:16px 0">')
+        gr.HTML("""
+        <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #312e81;
+             border-radius:12px;padding:16px;margin-bottom:8px">
+          <div style="color:#a5b4fc;font-size:0.75rem;font-weight:700;text-transform:uppercase;
+               letter-spacing:0.08em;margin-bottom:6px">🤖 LLM Auto-Play</div>
+          <div style="color:#94a3b8;font-size:0.83rem">
+            Run a full episode automatically using an LLM via the OpenAI-compatible API.
+            Requires <code style="color:#a5f3fc">API_BASE_URL</code>,
+            <code style="color:#a5f3fc">MODEL_NAME</code>, and
+            <code style="color:#a5f3fc">HF_TOKEN</code> set as Space secrets.
+          </div>
+        </div>
+        """)
+
+        with gr.Row():
+            with gr.Column(scale=2):
+                llm_base_url = gr.Textbox(
+                    value=os.getenv("API_BASE_URL", "https://router.huggingface.co/v1"),
+                    label="API Base URL",
+                )
+                llm_model = gr.Textbox(
+                    value=os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct"),
+                    label="Model Name",
+                )
+                llm_token = gr.Textbox(
+                    value="",
+                    label="HF Token (leave blank to use Space secret)",
+                    type="password",
+                )
+            with gr.Column(scale=1):
+                autoplay_btn = gr.Button("🤖  Run LLM Episode", size="lg",
+                    elem_id="start-btn", interactive=True)
+                autoplay_status = gr.HTML(
+                    '<div style="color:#475569;font-style:italic;font-size:0.83rem">'
+                    'LLM results will appear here.</div>'
+                )
+
         # ── Footer ──
         gr.HTML("""
         <div style="text-align:center;color:#334155;font-size:0.75rem;margin-top:20px;padding:12px;
@@ -631,6 +815,12 @@ def build_ui() -> gr.Blocks:
         step_btn.click(
             fn=do_step, inputs=[tool_dd, params_box, reasoning_box],
             outputs=[obs_html, history_html, status_html, step_btn],
+        )
+
+        autoplay_btn.click(
+            fn=lambda task, url, model, tok: run_llm_episode(task, url, model, tok),
+            inputs=[task_dd, llm_base_url, llm_model, llm_token],
+            outputs=[autoplay_status],
         )
 
     return demo
