@@ -396,6 +396,16 @@ def get_full_state() -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Mount Gradio UI at /ui
+# ---------------------------------------------------------------------------
+import gradio as gr
+from server.ui import build_ui
+
+_gradio_app = build_ui()
+app = gr.mount_gradio_app(app, _gradio_app, path="/ui")
+
+
 def main():
     """Entry point for 'server' script (required by openenv validate)."""
     import uvicorn
