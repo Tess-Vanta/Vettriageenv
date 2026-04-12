@@ -27,7 +27,7 @@ if HF_TOKEN is None:
     raise ValueError("HF_TOKEN environment variable is required")
 ENV_URL      = os.getenv("ENV_URL", "https://vantatess-vettriagevenv.hf.space")
 BENCHMARK    = "vettriagevenv"
-MAX_STEPS    = 40
+MAX_STEPS    = 90  # env allows 100 total; leave 10 buffer for terminal actions
 
 TASKS = [
     "easy_gdv",
@@ -232,6 +232,36 @@ def run_task(client: OpenAI, task_id: str) -> float:
 
         for step in range(1, MAX_STEPS + 1):
             if obs.get("done", False):
+                break
+
+            # Force a terminal action on the last step so episode always grades
+            if step == MAX_STEPS:
+                phase = obs.get("phase", "triage")
+                if phase == "disposition":
+                    tool = "make_disposition"
+                    parameters = {"disposition": "admit_icu"}
+                    reasoning = "forced terminal: step limit reached"
+                else:
+                    tool = "decide_triage_route"
+                    parameters = {"route": "urgent_stabilise"}
+                    reasoning = "forced terminal: step limit reached"
+                action_str = f"{tool}({json.dumps(parameters)})"
+                error = None
+                reward = 0.0
+                done = False
+                try:
+                    step_result = step_env(tool, parameters, reasoning)
+                    obs    = step_result["observation"]
+                    reward = step_result.get("reward") or 0.0
+                    done   = step_result.get("done", False)
+                    if done:
+                        score   = float(obs.get("grade") or 0.0)
+                        success = bool(obs.get("passed") or False)
+                except Exception as e:
+                    error = str(e)[:120]
+                rewards.append(reward)
+                steps_taken = step
+                log_step(step=step, action=action_str, reward=reward, done=done, error=error)
                 break
 
             tool, parameters, reasoning = get_action(client, obs, history)
