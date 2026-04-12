@@ -92,231 +92,173 @@ TASK_META = {
 }
 
 CSS = """
-/* ═══════════════════════════════════════════════════════════════════
-   VetTriageEnv — Polished dark UI
-   Charcoal base · electric blue accent · glowing cards · sharp type
-═══════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   VetTriageEnv — Vibrant dark UI
+   Deep navy · electric blue · glowing accents · sharp contrast
+═══════════════════════════════════════════════════════════════ */
 
-/* ── Reset & global base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body, .gradio-container, #root {
-    background: #0d0d12 !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif !important;
-    color: #e8e8f0 !important;
-    min-height: 100vh;
-}
+/* ── Page shell ── */
+body, .gradio-container { background: #080c14 !important; }
 footer, .built-with { display: none !important; }
 
-/* ── Global page background gradient ── */
-.gradio-container {
-    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37,99,235,0.12) 0%, transparent 70%),
-                #0d0d12 !important;
+/* ── Header ── */
+#vt-header {
+    background: linear-gradient(160deg, #0f1829 0%, #080c14 50%);
+    border-bottom: 1px solid rgba(56,189,248,0.20);
+    padding: 36px 48px 30px; text-align: center; position: relative; overflow: hidden;
+}
+#vt-header::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 70% 120% at 50% -20%, rgba(56,189,248,0.18) 0%, transparent 65%);
+}
+#vt-header h1 {
+    font-size: 2.6rem; font-weight: 900; margin: 0 0 10px;
+    letter-spacing: -0.05em; color: #f0f8ff; position: relative; z-index: 1;
+}
+#vt-header h1 .accent {
+    background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+#vt-header p {
+    color: rgba(200,220,255,0.45); font-size: 0.88rem;
+    letter-spacing: 0.06em; position: relative; z-index: 1;
 }
 
-/* ── Header banner ── */
-#header-banner {
-    background: linear-gradient(135deg, #13131c 0%, #0d0d12 60%, #0f1825 100%);
-    border-bottom: 1px solid rgba(37,99,235,0.25);
-    padding: 32px 48px 28px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-#header-banner::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(37,99,235,0.15) 0%, transparent 70%);
-    pointer-events: none;
-}
-#header-banner h1 {
-    font-size: 2.4rem; font-weight: 800; margin: 0 0 8px;
-    letter-spacing: -0.04em; color: #f0f0f8;
-    position: relative;
-}
-#header-banner h1 span {
-    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-#header-banner p {
-    color: rgba(255,255,255,0.38); margin: 0; font-size: 0.86rem;
-    letter-spacing: 0.03em; font-weight: 400; position: relative;
+/* ── Gradio structure cleanup ── */
+.tabitem, .tab-content, .gap, .contain, div.row, .block, .panel, .form {
+    background: transparent !important; border-color: transparent !important;
 }
 
-/* ── Gradio structural reset ── */
-.tabitem, .tab-content, .gap, .contain, div.row {
-    background: transparent !important;
-    border: none !important;
-}
-.block, .panel, .form, .wrap {
-    background: transparent !important;
-    border-color: rgba(255,255,255,0.06) !important;
-}
-
-/* ── Inputs ── */
-textarea, input[type="text"], input[type="password"], input[type="email"] {
-    background: #1f1f29 !important;
-    color: #e8e8f0 !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    border-radius: 10px !important;
-    font-size: 0.875rem !important;
-    padding: 10px 14px !important;
-    transition: border-color 0.18s, box-shadow 0.18s !important;
-    caret-color: #60a5fa !important;
-}
-textarea:focus, input:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.20) !important;
-    outline: none !important;
-    background: #242435 !important;
-}
-label span, .label-wrap span {
-    color: rgba(255,255,255,0.42) !important;
-    font-size: 0.74rem !important; font-weight: 600 !important;
-    text-transform: uppercase !important; letter-spacing: 0.08em !important;
-}
-
-/* ── Dropdown / select ── */
-select, ul[role="listbox"] {
-    background: #1f1f29 !important; color: #e8e8f0 !important;
-    border: 1px solid rgba(255,255,255,0.10) !important; border-radius: 10px !important;
-}
-li[role="option"]:hover, .option:hover { background: rgba(37,99,235,0.18) !important; }
-
-/* ── Buttons ── */
-button, .gr-button {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #ffffff !important;
-    border: none !important;
-    border-radius: 10px !important;
-    font-weight: 600 !important; font-size: 0.875rem !important;
-    letter-spacing: 0.01em !important;
-    padding: 11px 26px !important;
-    transition: all 0.18s cubic-bezier(0.4,0,0.2,1) !important;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.40), inset 0 1px 0 rgba(255,255,255,0.10) !important;
-    cursor: pointer !important;
-}
-button:hover, .gr-button:hover {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-    box-shadow: 0 6px 20px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.15) !important;
-    transform: translateY(-1px) !important;
-}
-button:active { transform: translateY(0) !important; }
-button:disabled, button[disabled] {
-    background: #1f1f29 !important; color: rgba(255,255,255,0.22) !important;
-    box-shadow: none !important; transform: none !important; cursor: default !important;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-}
-
-/* ── Tabs (outer) ── */
-div[role="tablist"], .tabs > .tab-nav, .tab-nav {
+/* ── Tabs ── */
+div[role="tablist"], .tab-nav {
     background: rgba(255,255,255,0.03) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 0 !important; padding: 0 12px !important;
+    border-bottom: 1px solid rgba(56,189,248,0.15) !important;
+    padding: 0 16px !important;
 }
 button[role="tab"], .tab-nav > button {
-    background: transparent !important;
-    color: rgba(255,255,255,0.38) !important;
+    background: transparent !important; color: rgba(200,220,255,0.38) !important;
     border: none !important; border-bottom: 2px solid transparent !important;
     border-radius: 0 !important; box-shadow: none !important;
-    font-size: 0.875rem !important; font-weight: 500 !important;
-    padding: 12px 20px !important; margin-bottom: -1px !important;
-    transition: color 0.18s !important;
+    font-size: 0.9rem !important; font-weight: 500 !important;
+    padding: 14px 22px !important; margin-bottom: -1px !important;
+    transition: color 0.2s !important; letter-spacing: 0.02em !important;
 }
 button[role="tab"]:hover, .tab-nav > button:hover {
-    color: rgba(255,255,255,0.72) !important;
+    color: rgba(200,220,255,0.80) !important;
     background: transparent !important; box-shadow: none !important; transform: none !important;
 }
 button[role="tab"][aria-selected="true"],
 button[role="tab"][aria-selected="true"]:hover,
-.tabs > .tab-nav > button.selected,
 .tab-nav > button.selected,
 [class*="svelte"] button[aria-selected="true"],
 .tabs [aria-selected="true"] {
-    color: #60a5fa !important;
-    border-bottom: 2px solid #2563eb !important;
+    color: #38bdf8 !important;
+    border-bottom: 2px solid #38bdf8 !important;
     background: transparent !important; box-shadow: none !important; transform: none !important;
 }
 
-/* ── Patient photo card ── */
+/* ── Inputs ── */
+textarea, input[type="text"], input[type="password"], input[type="email"] {
+    background: #0f1829 !important; color: #e0f0ff !important;
+    border: 1px solid rgba(56,189,248,0.18) !important;
+    border-radius: 10px !important; font-size: 0.875rem !important;
+    padding: 10px 14px !important; transition: all 0.18s !important;
+    caret-color: #38bdf8 !important;
+}
+textarea:focus, input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.18) !important;
+    outline: none !important;
+}
+label span, .label-wrap span {
+    color: rgba(150,185,220,0.55) !important;
+    font-size: 0.72rem !important; font-weight: 700 !important;
+    text-transform: uppercase !important; letter-spacing: 0.10em !important;
+}
+
+/* ── Dropdown ── */
+select, ul[role="listbox"] {
+    background: #0f1829 !important; color: #e0f0ff !important;
+    border: 1px solid rgba(56,189,248,0.18) !important; border-radius: 10px !important;
+}
+li[role="option"]:hover { background: rgba(56,189,248,0.14) !important; }
+
+/* ── Buttons — vivid electric blue ── */
+button, .gr-button {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%) !important;
+    color: #ffffff !important; border: none !important;
+    border-radius: 10px !important; font-weight: 700 !important;
+    font-size: 0.9rem !important; letter-spacing: 0.02em !important;
+    padding: 11px 28px !important;
+    transition: all 0.18s cubic-bezier(0.4,0,0.2,1) !important;
+    box-shadow: 0 3px 16px rgba(14,165,233,0.45), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+    cursor: pointer !important;
+}
+button:hover, .gr-button:hover {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%) !important;
+    box-shadow: 0 6px 28px rgba(14,165,233,0.65), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    transform: translateY(-1px) !important;
+}
+button:active { transform: translateY(0px) scale(0.99) !important; }
+button:disabled, button[disabled] {
+    background: #1a2035 !important; color: rgba(200,220,255,0.22) !important;
+    box-shadow: none !important; transform: none !important; cursor: default !important;
+    border: 1px solid rgba(56,189,248,0.08) !important;
+}
+
+/* ── Patient photo ── */
 .patient-photo-wrap {
-    width: 100%; border-radius: 14px; overflow: hidden;
+    width: 100%; border-radius: 16px; overflow: hidden;
     position: relative; aspect-ratio: 16/9;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07);
-    margin: 10px 0 14px;
+    box-shadow: 0 0 0 1px rgba(56,189,248,0.20), 0 12px 40px rgba(0,0,0,0.7);
+    margin: 12px 0 16px;
 }
 .patient-photo-wrap img {
-    width: 100%; height: 100%; object-fit: cover; object-position: center;
-    display: block;
+    width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
 }
 .patient-photo-wrap .photo-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.82) 100%);
+    background: linear-gradient(180deg, transparent 45%, rgba(4,8,20,0.88) 100%);
 }
 .patient-photo-wrap .photo-label {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 12px 14px 14px;
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 14px 14px;
 }
 .patient-photo-wrap .photo-label .name {
-    color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.01em;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    color: #fff; font-size: 0.85rem; font-weight: 700;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
 .patient-photo-wrap .photo-label .badge {
     display: inline-block; margin-top: 5px;
-    background: #dc2626; color: #fff;
-    border-radius: 5px; padding: 2px 9px;
-    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #fff; border-radius: 5px; padding: 2px 9px;
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.5);
 }
 
-/* ── Info panels ── */
-.info-card {
-    background: linear-gradient(135deg, #16161d 0%, #1a1a24 100%) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 14px !important;
-    padding: 16px !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
-}
-
-/* ── Dividers ── */
-.vt-divider {
-    border: none; border-top: 1px solid rgba(255,255,255,0.07);
-    margin: 16px 0;
-}
-
-/* ── Section labels ── */
-.vt-section-label {
-    color: rgba(255,255,255,0.35);
-    font-size: 0.7rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.1em;
-    margin: 0 0 8px;
-}
-
-/* ── Observation / history panels ── */
+/* ── Content panels ── */
 #obs-panel, #history-panel {
-    background: #13131c !important;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-    border-radius: 14px !important;
-    padding: 14px !important;
-    min-height: 280px !important;
+    background: #0a1020 !important;
+    border: 1px solid rgba(56,189,248,0.12) !important;
+    border-radius: 14px !important; padding: 16px !important; min-height: 300px !important;
+}
+#status-panel {
+    background: #0a1020 !important;
+    border: 1px solid rgba(56,189,248,0.12) !important;
+    border-radius: 12px !important; padding: 12px !important;
 }
 
-/* ── Status output ── */
-#status-panel {
-    background: #13131c !important;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-    border-radius: 12px !important;
-    padding: 12px !important;
+/* ── Divider / section label ── */
+.vt-divider { border: none; border-top: 1px solid rgba(56,189,248,0.10); margin: 18px 0; }
+.vt-section-label {
+    color: rgba(56,189,248,0.55); font-size: 0.68rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.14em; margin: 0 0 10px;
 }
 
 /* ── Footer ── */
 #vt-footer {
-    text-align: center;
-    color: rgba(255,255,255,0.14);
-    font-size: 0.7rem; letter-spacing: 0.05em;
-    padding: 18px 0 10px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    margin-top: 24px;
+    text-align: center; color: rgba(200,220,255,0.18); font-size: 0.7rem;
+    letter-spacing: 0.06em; padding: 20px 0 12px;
+    border-top: 1px solid rgba(56,189,248,0.07); margin-top: 24px;
 }
 """
 
@@ -745,65 +687,67 @@ def build_ui() -> gr.Blocks:
 
     theme = gr.themes.Base(
         primary_hue=gr.themes.Color(
-            c50="#eff6ff", c100="#dbeafe", c200="#bfdbfe", c300="#93c5fd",
-            c400="#60a5fa", c500="#2563eb", c600="#1d4ed8", c700="#1e40af",
-            c800="#1e3a8a", c900="#1e3352", c950="#172554",
+            c50="#f0f9ff", c100="#e0f2fe", c200="#bae6fd", c300="#7dd3fc",
+            c400="#38bdf8", c500="#0ea5e9", c600="#0284c7", c700="#0369a1",
+            c800="#075985", c900="#0c4a6e", c950="#082f49",
         ),
         secondary_hue=gr.themes.Color(
-            c50="#eff6ff", c100="#dbeafe", c200="#bfdbfe", c300="#93c5fd",
-            c400="#60a5fa", c500="#2563eb", c600="#1d4ed8", c700="#1e40af",
-            c800="#1e3a8a", c900="#1e3352", c950="#172554",
+            c50="#eef2ff", c100="#e0e7ff", c200="#c7d2fe", c300="#a5b4fc",
+            c400="#818cf8", c500="#6366f1", c600="#4f46e5", c700="#4338ca",
+            c800="#3730a3", c900="#312e81", c950="#1e1b4b",
         ),
         neutral_hue=gr.themes.Color(
-            c50="#f4f4f8", c100="#e8e8f0", c200="#c8c8da", c300="#9898b8",
-            c400="#6b6b8a", c500="#4a4a62", c600="#2a2a38", c700="#1f1f29",
-            c800="#16161d", c900="#0d0d12", c950="#060609",
+            c50="#f0f8ff", c100="#dbeeff", c200="#aad4f5", c300="#76b8e8",
+            c400="#4a9dd6", c500="#2d7ab0", c600="#1e5a85", c700="#163f5e",
+            c800="#0f2a40", c900="#080c14", c950="#04060c",
         ),
         font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"],
     ).set(
-        body_background_fill="#0d0d12",
-        body_background_fill_dark="#0d0d12",
-        body_text_color="#e8e8f0",
-        body_text_color_dark="#e8e8f0",
-        background_fill_primary="#0d0d12",
-        background_fill_primary_dark="#0d0d12",
-        background_fill_secondary="#16161d",
-        background_fill_secondary_dark="#16161d",
-        border_color_primary="#2a2a38",
-        border_color_primary_dark="#2a2a38",
-        color_accent="#2563eb",
-        color_accent_soft="rgba(37,99,235,0.18)",
-        block_background_fill="#16161d",
-        block_background_fill_dark="#16161d",
-        block_border_color="#2a2a38",
-        block_border_color_dark="#2a2a38",
-        block_label_text_color="#6b6b8a",
-        block_label_text_color_dark="#6b6b8a",
-        input_background_fill="#1f1f29",
-        input_background_fill_dark="#1f1f29",
-        input_border_color="#2a2a38",
-        input_border_color_dark="#2a2a38",
-        button_primary_background_fill="#2563eb",
-        button_primary_background_fill_dark="#2563eb",
-        button_primary_background_fill_hover="#3b82f6",
-        button_primary_background_fill_hover_dark="#3b82f6",
+        body_background_fill="#080c14",
+        body_background_fill_dark="#080c14",
+        body_text_color="#e0f0ff",
+        body_text_color_dark="#e0f0ff",
+        background_fill_primary="#080c14",
+        background_fill_primary_dark="#080c14",
+        background_fill_secondary="#0f1829",
+        background_fill_secondary_dark="#0f1829",
+        border_color_primary="rgba(56,189,248,0.15)",
+        border_color_primary_dark="rgba(56,189,248,0.15)",
+        color_accent="#38bdf8",
+        color_accent_soft="rgba(56,189,248,0.15)",
+        block_background_fill="#0f1829",
+        block_background_fill_dark="#0f1829",
+        block_border_color="rgba(56,189,248,0.15)",
+        block_border_color_dark="rgba(56,189,248,0.15)",
+        block_label_text_color="rgba(150,185,220,0.55)",
+        block_label_text_color_dark="rgba(150,185,220,0.55)",
+        input_background_fill="#0f1829",
+        input_background_fill_dark="#0f1829",
+        input_border_color="rgba(56,189,248,0.18)",
+        input_border_color_dark="rgba(56,189,248,0.18)",
+        button_primary_background_fill="linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
+        button_primary_background_fill_dark="linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
+        button_primary_background_fill_hover="linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)",
+        button_primary_background_fill_hover_dark="linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)",
         button_primary_text_color="#ffffff",
         button_primary_text_color_dark="#ffffff",
-        button_secondary_background_fill="#1f1f29",
-        button_secondary_background_fill_dark="#1f1f29",
-        button_secondary_background_fill_hover="#2a2a38",
-        button_secondary_background_fill_hover_dark="#2a2a38",
-        button_secondary_text_color="#e8e8f0",
-        button_secondary_text_color_dark="#e8e8f0",
-        button_secondary_border_color="#2a2a38",
-        button_secondary_border_color_dark="#2a2a38",
+        button_secondary_background_fill="#0f1829",
+        button_secondary_background_fill_dark="#0f1829",
+        button_secondary_background_fill_hover="#1a2a44",
+        button_secondary_background_fill_hover_dark="#1a2a44",
+        button_secondary_text_color="#e0f0ff",
+        button_secondary_text_color_dark="#e0f0ff",
+        button_secondary_border_color="rgba(56,189,248,0.20)",
+        button_secondary_border_color_dark="rgba(56,189,248,0.20)",
+        shadow_drop="0 4px 24px rgba(0,0,0,0.5)",
+        shadow_drop_lg="0 8px 40px rgba(0,0,0,0.6)",
     )
 
     with gr.Blocks(title="VetTriageEnv", css=CSS, theme=theme) as demo:
         gr.HTML("""
-        <div id="header-banner">
-          <h1><span>Vet</span>TriageEnv</h1>
-          <p>AI Veterinary Triage &nbsp;&bull;&nbsp; Interactive Benchmark &nbsp;&bull;&nbsp; 7 Tasks &nbsp;&bull;&nbsp; Easy &rarr; Hard</p>
+        <div id="vt-header">
+          <h1><span class="accent">Vet</span>TriageEnv</h1>
+          <p>AI&nbsp;VETERINARY&nbsp;TRIAGE &nbsp;&nbsp;&middot;&nbsp;&nbsp; INTERACTIVE&nbsp;BENCHMARK &nbsp;&nbsp;&middot;&nbsp;&nbsp; 7&nbsp;TASKS &nbsp;&nbsp;&middot;&nbsp;&nbsp; EASY&nbsp;&rarr;&nbsp;HARD</p>
         </div>
         """)
 
@@ -861,12 +805,12 @@ def build_ui() -> gr.Blocks:
             # ── Tab 2: LLM Auto-Play ─────────────────────────────────────────
             with gr.Tab("  LLM Auto-Play  "):
                 gr.HTML("""
-                <div style="background:linear-gradient(135deg,rgba(37,99,235,0.12) 0%,rgba(255,255,255,0.03) 100%);
-                            border:1px solid rgba(37,99,235,0.25);border-radius:14px;padding:18px;margin-bottom:20px">
-                  <div style="color:#93c5fd;font-weight:700;font-size:1rem;margin-bottom:6px;letter-spacing:-0.01em">
-                    &#x26A1; Run a full episode with an LLM
+                <div style="background:linear-gradient(135deg,rgba(14,165,233,0.12) 0%,rgba(99,102,241,0.08) 100%);
+                            border:1px solid rgba(56,189,248,0.28);border-radius:14px;padding:20px;margin-bottom:20px">
+                  <div style="color:#38bdf8;font-weight:800;font-size:1.05rem;margin-bottom:6px;letter-spacing:-0.01em">
+                    Run a full episode with an LLM
                   </div>
-                  <div style="color:rgba(255,255,255,0.45);font-size:0.83rem;line-height:1.65">
+                  <div style="color:rgba(200,220,255,0.55);font-size:0.84rem;line-height:1.7">
                     Connects to any OpenAI-compatible endpoint and plays the selected task end-to-end.
                     View per-step rewards, stochastic failure flags, and a final grade.
                   </div>
@@ -879,13 +823,13 @@ def build_ui() -> gr.Blocks:
                         llm_model    = gr.Textbox(value=os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct"), label="Model Name")
                         llm_token    = gr.Textbox(value="", label="HF Token (leave blank to use Space secret)", type="password")
                         gr.HTML("""
-                        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+                        <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);
                                     border-radius:10px;padding:12px 14px;margin-top:8px">
-                          <div style="color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:700;
-                                      text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Free model suggestions</div>
-                          <div style="color:rgba(255,255,255,0.45);font-size:0.78rem;line-height:1.8">
-                            Qwen/Qwen2.5-7B-Instruct &nbsp;&bull;&nbsp;
-                            mistralai/Mistral-7B-Instruct-v0.3 &nbsp;&bull;&nbsp;
+                          <div style="color:rgba(56,189,248,0.7);font-size:0.7rem;font-weight:800;
+                                      text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Free model suggestions</div>
+                          <div style="color:rgba(200,220,255,0.55);font-size:0.78rem;line-height:1.9;font-family:monospace">
+                            Qwen/Qwen2.5-7B-Instruct<br>
+                            mistralai/Mistral-7B-Instruct-v0.3<br>
                             meta-llama/Llama-3.1-8B-Instruct
                           </div>
                         </div>
