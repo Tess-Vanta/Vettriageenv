@@ -96,63 +96,74 @@ CSS = """
    Base:    #0d1117  (page bg)    #161b22  (card bg)    #21262d  (input bg)
    Border:  #30363d
    Text:    #e6edf3  (primary)    #8b949e  (muted)
-   Accent:  #58a6ff  (blue — links, labels, phase badges)
-   Status:  #3fb950 (success)     #d29922 (warning)     #f85149 (danger)
+   Accent:  #58a6ff  (blue)
+   Status:  #3fb950 (success)   #d29922 (warning)   #f85149 (danger)
 ───────────────────────────────────────────────────────────────────────── */
 
-body, .gradio-container {
-    background: #0d1117 !important;
-    color: #e6edf3 !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
+body, .gradio-container, .main, footer { background: #0d1117 !important; }
+.gradio-container { color: #e6edf3 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
 
 /* Header */
 #header-banner {
-    background: #161b22;
-    border-bottom: 1px solid #30363d;
-    padding: 20px 32px 18px;
-    text-align: center;
+    background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 20px 32px 18px; text-align: center;
 }
-#header-banner h1 {
-    font-size: 1.7rem; font-weight: 700; margin: 0 0 3px; color: #e6edf3; letter-spacing: -0.02em;
-}
+#header-banner h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 3px; color: #e6edf3; letter-spacing: -0.02em; }
 #header-banner h1 span { color: #58a6ff; }
 #header-banner p { color: #8b949e; margin: 0; font-size: 0.85rem; }
 
-/* Inputs */
+/* Inputs & labels */
 textarea, input[type="text"], input[type="password"] {
     background: #21262d !important; color: #e6edf3 !important;
-    border: 1px solid #30363d !important; border-radius: 6px !important;
-    font-size: 0.84rem !important;
+    border: 1px solid #30363d !important; border-radius: 6px !important; font-size: 0.84rem !important;
 }
 textarea:focus, input:focus {
-    border-color: #58a6ff !important; outline: none !important;
-    box-shadow: 0 0 0 3px rgba(88,166,255,0.12) !important;
+    border-color: #58a6ff !important; box-shadow: 0 0 0 3px rgba(88,166,255,0.12) !important;
 }
-label { color: #8b949e !important; font-size: 0.8rem !important; }
-select { background: #21262d !important; color: #e6edf3 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
+label, .label-wrap span { color: #8b949e !important; font-size: 0.8rem !important; }
+select, .wrap { background: #21262d !important; color: #e6edf3 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
 
-/* Buttons — single accent colour, different opacity for hierarchy */
-#start-btn button, #step-btn button, #llm-btn button {
+/* ALL buttons — use accent blue; Gradio wraps them in divs so target broadly */
+button.lg, button.primary, .gr-button, button {
     background: #1f6feb !important; color: #ffffff !important;
     border: 1px solid #388bfd !important; border-radius: 6px !important;
-    font-weight: 600 !important; font-size: 0.9rem !important;
-    transition: background 0.15s !important;
+    font-weight: 600 !important; transition: background 0.15s !important;
 }
-#start-btn button:hover, #step-btn button:hover, #llm-btn button:hover {
-    background: #388bfd !important;
+button.lg:hover, button.primary:hover, .gr-button:hover, button:hover {
+    background: #388bfd !important; border-color: #58a6ff !important;
 }
-#start-btn button:disabled, #step-btn button:disabled {
+/* Disabled state */
+button:disabled, button[disabled] {
     background: #21262d !important; color: #484f58 !important;
     border-color: #30363d !important; cursor: not-allowed !important;
 }
 
-/* Tabs */
-.tab-nav button { color: #8b949e !important; border-bottom: 2px solid transparent !important; font-size: 0.85rem !important; }
-.tab-nav button.selected { color: #58a6ff !important; border-bottom-color: #58a6ff !important; }
+/* Tabs — override Gradio's orange/red default */
+.tabs > .tab-nav, div[role="tablist"] {
+    border-bottom: 1px solid #30363d !important; background: #0d1117 !important;
+}
+.tabs > .tab-nav > button, div[role="tablist"] button,
+button[role="tab"] {
+    background: transparent !important; color: #8b949e !important;
+    border: none !important; border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important; font-size: 0.88rem !important;
+    font-weight: 500 !important; padding: 8px 16px !important;
+}
+.tabs > .tab-nav > button.selected, div[role="tablist"] button.selected,
+button[role="tab"][aria-selected="true"] {
+    color: #58a6ff !important; border-bottom: 2px solid #58a6ff !important;
+    background: transparent !important;
+}
+.tabs > .tab-nav > button:hover, div[role="tablist"] button:hover {
+    color: #e6edf3 !important; background: rgba(88,166,255,0.06) !important;
+}
 
-/* Dropdown */
-.dropdown { background: #21262d !important; border: 1px solid #30363d !important; }
+/* Panel / card backgrounds */
+.tabitem, .tab-content, .block, .panel { background: #0d1117 !important; border-color: #30363d !important; }
+
+/* Dropdown list */
+.options, ul[role="listbox"] { background: #161b22 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
+li[role="option"]:hover { background: #21262d !important; }
 """
 
 
