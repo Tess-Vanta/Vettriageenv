@@ -97,45 +97,6 @@ CSS = """
    Charcoal base · electric blue accent · glowing cards · sharp type
 ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Override ALL Gradio theme tokens ── */
-:root {
-    --color-accent: #2563eb !important;
-    --color-accent-soft: rgba(37,99,235,0.18) !important;
-    --primary-50:  #eff6ff !important;
-    --primary-100: #dbeafe !important;
-    --primary-200: #bfdbfe !important;
-    --primary-300: #93c5fd !important;
-    --primary-400: #60a5fa !important;
-    --primary-500: #2563eb !important;
-    --primary-600: #1d4ed8 !important;
-    --primary-700: #1e40af !important;
-    --secondary-500: #2563eb !important;
-    --secondary-600: #1d4ed8 !important;
-    --neutral-950: #060609 !important;
-    --neutral-900: #0d0d12 !important;
-    --neutral-800: #16161d !important;
-    --neutral-700: #1f1f29 !important;
-    --neutral-600: #2a2a38 !important;
-    --neutral-500: #4a4a62 !important;
-    --neutral-400: #6b6b8a !important;
-    --neutral-300: #9898b8 !important;
-    --neutral-200: #c8c8da !important;
-    --neutral-100: #e8e8f0 !important;
-    --neutral-50:  #f4f4f8 !important;
-    --background-fill-primary: #0d0d12 !important;
-    --background-fill-secondary: #16161d !important;
-    --border-color-primary: rgba(255,255,255,0.08) !important;
-    --border-color-accent: #2563eb !important;
-    --body-text-color: #e8e8f0 !important;
-    --block-background-fill: #16161d !important;
-    --block-border-color: rgba(255,255,255,0.08) !important;
-    --block-border-width: 1px !important;
-    --block-radius: 14px !important;
-    --input-background-fill: #1f1f29 !important;
-    --input-border-color: rgba(255,255,255,0.10) !important;
-    --shadow-drop: 0 4px 24px rgba(0,0,0,0.6) !important;
-}
-
 /* ── Reset & global base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -782,7 +743,63 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
 def build_ui() -> gr.Blocks:
     default_task = "easy_gdv"
 
-    with gr.Blocks(title="VetTriageEnv", css=CSS) as demo:
+    theme = gr.themes.Base(
+        primary_hue=gr.themes.Color(
+            c50="#eff6ff", c100="#dbeafe", c200="#bfdbfe", c300="#93c5fd",
+            c400="#60a5fa", c500="#2563eb", c600="#1d4ed8", c700="#1e40af",
+            c800="#1e3a8a", c900="#1e3352", c950="#172554",
+        ),
+        secondary_hue=gr.themes.Color(
+            c50="#eff6ff", c100="#dbeafe", c200="#bfdbfe", c300="#93c5fd",
+            c400="#60a5fa", c500="#2563eb", c600="#1d4ed8", c700="#1e40af",
+            c800="#1e3a8a", c900="#1e3352", c950="#172554",
+        ),
+        neutral_hue=gr.themes.Color(
+            c50="#f4f4f8", c100="#e8e8f0", c200="#c8c8da", c300="#9898b8",
+            c400="#6b6b8a", c500="#4a4a62", c600="#2a2a38", c700="#1f1f29",
+            c800="#16161d", c900="#0d0d12", c950="#060609",
+        ),
+        font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"],
+    ).set(
+        body_background_fill="#0d0d12",
+        body_background_fill_dark="#0d0d12",
+        body_text_color="#e8e8f0",
+        body_text_color_dark="#e8e8f0",
+        background_fill_primary="#0d0d12",
+        background_fill_primary_dark="#0d0d12",
+        background_fill_secondary="#16161d",
+        background_fill_secondary_dark="#16161d",
+        border_color_primary="#2a2a38",
+        border_color_primary_dark="#2a2a38",
+        color_accent="#2563eb",
+        color_accent_soft="rgba(37,99,235,0.18)",
+        block_background_fill="#16161d",
+        block_background_fill_dark="#16161d",
+        block_border_color="#2a2a38",
+        block_border_color_dark="#2a2a38",
+        block_label_text_color="#6b6b8a",
+        block_label_text_color_dark="#6b6b8a",
+        input_background_fill="#1f1f29",
+        input_background_fill_dark="#1f1f29",
+        input_border_color="#2a2a38",
+        input_border_color_dark="#2a2a38",
+        button_primary_background_fill="#2563eb",
+        button_primary_background_fill_dark="#2563eb",
+        button_primary_background_fill_hover="#3b82f6",
+        button_primary_background_fill_hover_dark="#3b82f6",
+        button_primary_text_color="#ffffff",
+        button_primary_text_color_dark="#ffffff",
+        button_secondary_background_fill="#1f1f29",
+        button_secondary_background_fill_dark="#1f1f29",
+        button_secondary_background_fill_hover="#2a2a38",
+        button_secondary_background_fill_hover_dark="#2a2a38",
+        button_secondary_text_color="#e8e8f0",
+        button_secondary_text_color_dark="#e8e8f0",
+        button_secondary_border_color="#2a2a38",
+        button_secondary_border_color_dark="#2a2a38",
+    )
+
+    with gr.Blocks(title="VetTriageEnv", css=CSS, theme=theme) as demo:
         gr.HTML("""
         <div id="header-banner">
           <h1><span>Vet</span>TriageEnv</h1>
@@ -801,7 +818,7 @@ def build_ui() -> gr.Blocks:
                         task_dd = gr.Dropdown(choices=TASK_CHOICES, value=default_task, label="Select Task")
                         task_img = gr.HTML(TASK_SVGS.get(default_task, ""))
                         task_card_html = gr.HTML(_task_card(default_task))
-                        start_btn = gr.Button("▶  Start Episode", elem_id="start-btn", size="lg")
+                        start_btn = gr.Button("Start Episode", elem_id="start-btn", size="lg")
                         gr.HTML('<hr class="vt-divider">')
                         gr.HTML('<p class="vt-section-label">Patient Details</p>')
                         patient_html = gr.HTML(
@@ -874,7 +891,7 @@ def build_ui() -> gr.Blocks:
                         </div>
                         """)
                     with gr.Column(scale=1):
-                        autoplay_btn = gr.Button("&#x25B6;  Run Episode", elem_id="llm-btn", size="lg")
+                        autoplay_btn = gr.Button("Run Episode", elem_id="llm-btn", size="lg")
                         autoplay_status = gr.HTML(
                             '<div style="color:rgba(255,255,255,0.28);font-style:italic;font-size:0.82rem;margin-top:10px">'
                             'Results will appear here after the episode.</div>'
