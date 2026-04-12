@@ -92,127 +92,176 @@ TASK_META = {
 }
 
 CSS = """
-/* ── Palette ──────────────────────────────────────────────────────────────
-   Base:    #0d1117  (page bg)    #161b22  (card bg)    #21262d  (input bg)
-   Border:  #30363d
-   Text:    #e6edf3  (primary)    #8b949e  (muted)
-   Accent:  #58a6ff  (blue)
-   Status:  #3fb950 (success)   #d29922 (warning)   #f85149 (danger)
-───────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   VetTriageEnv — Apple-inspired dark design
+   Deep black base · vivid blue accent · glass cards · smooth curves
+═══════════════════════════════════════════════════════════════════ */
 
-body, .gradio-container, .main, footer { background: #0d1117 !important; }
-.gradio-container { color: #e6edf3 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
-
-/* Header */
-#header-banner {
-    background: #161b22; border-bottom: 1px solid #30363d;
-    padding: 20px 32px 18px; text-align: center;
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; }
+body, .gradio-container, .main, footer, .svelte-1gfkfd6 {
+    background: #000000 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif !important;
+    color: #f5f5f7 !important;
 }
-#header-banner h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 3px; color: #e6edf3; letter-spacing: -0.02em; }
-#header-banner h1 span { color: #58a6ff; }
-#header-banner p { color: #8b949e; margin: 0; font-size: 0.85rem; }
+footer { display: none !important; }
 
-/* Inputs & labels */
+/* ── Header ── */
+#header-banner {
+    background: linear-gradient(180deg, #1c1c1e 0%, #000000 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 28px 40px 24px;
+    text-align: center;
+}
+#header-banner h1 {
+    font-size: 2rem; font-weight: 700; margin: 0 0 6px;
+    letter-spacing: -0.03em; color: #f5f5f7;
+}
+#header-banner h1 span { color: #0a84ff; }
+#header-banner p {
+    color: rgba(255,255,255,0.45); margin: 0; font-size: 0.88rem; letter-spacing: 0.01em;
+}
+
+/* ── Glass card surface (used on all panels) ── */
+.glass {
+    background: rgba(255,255,255,0.05) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 16px !important;
+}
+
+/* ── Gradio structural panels ── */
+.tabitem, .tab-content, .block, .panel, .form, .gap, .wrap,
+.svelte-1gfkfd6, .contain, div.row {
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+/* ── Inputs ── */
 textarea, input[type="text"], input[type="password"] {
-    background: #21262d !important; color: #e6edf3 !important;
-    border: 1px solid #30363d !important; border-radius: 6px !important; font-size: 0.84rem !important;
+    background: #1c1c1e !important;
+    color: #f5f5f7 !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 10px !important;
+    font-size: 0.88rem !important;
+    padding: 10px 14px !important;
+    transition: border-color 0.2s !important;
 }
 textarea:focus, input:focus {
-    border-color: #58a6ff !important; box-shadow: 0 0 0 3px rgba(88,166,255,0.12) !important;
+    border-color: #0a84ff !important;
+    box-shadow: 0 0 0 3px rgba(10,132,255,0.18) !important;
+    outline: none !important;
 }
-label, .label-wrap span { color: #8b949e !important; font-size: 0.8rem !important; }
-select, .wrap { background: #21262d !important; color: #e6edf3 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
+label, .label-wrap span { color: rgba(255,255,255,0.5) !important; font-size: 0.78rem !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
 
-/* ALL buttons — use accent blue; Gradio wraps them in divs so target broadly */
-button.lg, button.primary, .gr-button, button {
-    background: #1f6feb !important; color: #ffffff !important;
-    border: 1px solid #388bfd !important; border-radius: 6px !important;
-    font-weight: 600 !important; transition: background 0.15s !important;
+/* ── Select / dropdown ── */
+select, .wrap, .options, ul[role="listbox"] {
+    background: #1c1c1e !important; color: #f5f5f7 !important;
+    border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 10px !important;
 }
-button.lg:hover, button.primary:hover, .gr-button:hover, button:hover {
-    background: #388bfd !important; border-color: #58a6ff !important;
+li[role="option"]:hover { background: rgba(10,132,255,0.15) !important; }
+
+/* ── Buttons — vivid blue, pill shape ── */
+button, .gr-button, button.lg, button.primary, button.secondary {
+    background: #0a84ff !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 980px !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em !important;
+    padding: 10px 24px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 12px rgba(10,132,255,0.35) !important;
 }
-/* Disabled state */
+button:hover, .gr-button:hover, button.lg:hover {
+    background: #409cff !important;
+    box-shadow: 0 4px 20px rgba(10,132,255,0.5) !important;
+    transform: translateY(-1px) !important;
+}
 button:disabled, button[disabled] {
-    background: #21262d !important; color: #484f58 !important;
-    border-color: #30363d !important; cursor: not-allowed !important;
+    background: #2c2c2e !important; color: rgba(255,255,255,0.25) !important;
+    box-shadow: none !important; transform: none !important; cursor: not-allowed !important;
 }
 
-/* Tabs — override Gradio's orange/red default */
-.tabs > .tab-nav, div[role="tablist"] {
-    border-bottom: 1px solid #30363d !important; background: #0d1117 !important;
-}
-.tabs > .tab-nav > button, div[role="tablist"] button,
-button[role="tab"] {
-    background: transparent !important; color: #8b949e !important;
-    border: none !important; border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important; font-size: 0.88rem !important;
-    font-weight: 500 !important; padding: 8px 16px !important;
-}
-.tabs > .tab-nav > button.selected, div[role="tablist"] button.selected,
-button[role="tab"][aria-selected="true"] {
-    color: #58a6ff !important; border-bottom: 2px solid #58a6ff !important;
+/* ── Tabs — clean underline style ── */
+div[role="tablist"], .tabs > .tab-nav, .tab-nav {
     background: transparent !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    padding: 0 4px !important;
 }
-.tabs > .tab-nav > button:hover, div[role="tablist"] button:hover {
-    color: #e6edf3 !important; background: rgba(88,166,255,0.06) !important;
+button[role="tab"], .tabs > .tab-nav > button, .tab-nav > button {
+    background: transparent !important;
+    color: rgba(255,255,255,0.4) !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    font-size: 0.9rem !important; font-weight: 500 !important;
+    padding: 10px 20px !important;
+    margin-bottom: -1px !important;
+    box-shadow: none !important;
+    transition: color 0.2s !important;
 }
-
-/* Panel / card backgrounds */
-.tabitem, .tab-content, .block, .panel { background: #0d1117 !important; border-color: #30363d !important; }
-
-/* Dropdown list */
-.options, ul[role="listbox"] { background: #161b22 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
-li[role="option"]:hover { background: #21262d !important; }
+button[role="tab"]:hover, .tab-nav > button:hover {
+    color: rgba(255,255,255,0.75) !important;
+    background: transparent !important;
+    box-shadow: none !important; transform: none !important;
+}
+button[role="tab"][aria-selected="true"], .tabs > .tab-nav > button.selected, .tab-nav > button.selected {
+    color: #0a84ff !important;
+    border-bottom: 2px solid #0a84ff !important;
+    background: transparent !important;
+    box-shadow: none !important; transform: none !important;
+}
 """
 
 
 def _severity_bar(pct: int) -> str:
-    c = "#22c55e" if pct < 40 else "#eab308" if pct < 65 else "#f85149"
+    c = "#30d158" if pct < 40 else "#ff9f0a" if pct < 65 else "#f85149"
     return (
         f'<div style="margin:10px 0 6px">'
-        f'<div style="display:flex;justify-content:space-between;font-size:0.76rem;color:#8b949e;margin-bottom:3px">'
+        f'<div style="display:flex;justify-content:space-between;font-size:0.76rem;color:rgba(255,255,255,0.5);margin-bottom:3px">'
         f'<span>Patient Severity</span><span style="color:{c};font-weight:700">{pct}%</span></div>'
-        f'<div style="height:6px;background:#21262d;border-radius:3px;overflow:hidden">'
+        f'<div style="height:6px;background:#2c2c2e;border-radius:3px;overflow:hidden">'
         f'<div style="width:{pct}%;height:100%;background:{c};border-radius:3px"></div>'
         f'</div></div>'
     )
 
 
 def _pill(text: str, bg: str, fg: str) -> str:
-    return f'<span style="background:{bg};color:{fg};border-radius:5px;padding:2px 9px;font-size:0.73rem;font-weight:700">{text}</span>'
+    return f'<span style="background:{bg};color:{fg};border-radius:8px;padding:2px 9px;font-size:0.73rem;font-weight:700">{text}</span>'
 
 
 def _section(title: str, label: str, content: str) -> str:
     return (
         f'<div style="margin:12px 0">'
-        f'<div style="color:#58a6ff;font-size:0.7rem;font-weight:700;text-transform:uppercase;'
+        f'<div style="color:#0a84ff;font-size:0.7rem;font-weight:700;text-transform:uppercase;'
         f'letter-spacing:0.1em;margin-bottom:5px">{label}</div>'
-        f'<div style="background:#161b22;border:1px solid #30363d;border-radius:7px;padding:10px;'
-        f'font-size:0.84rem;color:#e6edf3;line-height:1.65">{content}</div></div>'
+        f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:10px;'
+        f'font-size:0.84rem;color:#f5f5f7;line-height:1.65">{content}</div></div>'
     )
 
 
 def _fmt_obs(obs, severity: Optional[float] = None) -> str:
     lines = []
     phase_colours = {
-        "triage":        ("#0d2a4a", "#58a6ff"),
-        "stabilisation": ("#2a1e00", "#d29922"),
-        "monitoring":    ("#0f2a1a", "#3fb950"),
+        "triage":        ("#0d2a4a", "#0a84ff"),
+        "stabilisation": ("#2a1e00", "#ff9f0a"),
+        "monitoring":    ("#0f2a1a", "#30d158"),
         "disposition":   ("#1e1433", "#a78bfa"),
     }
     bg, fg = phase_colours.get(obs.phase, ("#21262d", "#8b949e"))
     lines.append(
         f'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">'
-        f'<span style="background:{bg};color:{fg};border:1px solid {fg}44;border-radius:5px;'
+        f'<span style="background:{bg};color:{fg};border:1px solid {fg}44;border-radius:8px;'
         f'padding:3px 11px;font-size:0.75rem;font-weight:800;letter-spacing:0.06em">{obs.phase.upper()}</span>'
-        f'<span style="color:#8b949e;font-size:0.82rem">step {obs.step} / {obs.phase_step_limit}</span>'
-        f'<span style="color:#8b949e;font-size:0.82rem">{obs.sim_time_hours:.1f} h elapsed</span>'
+        f'<span style="color:rgba(255,255,255,0.5);font-size:0.82rem">step {obs.step} / {obs.phase_step_limit}</span>'
+        f'<span style="color:rgba(255,255,255,0.5);font-size:0.82rem">{obs.sim_time_hours:.1f} h elapsed</span>'
     )
     if obs.budget_limit is not None:
         remaining = obs.budget_remaining if obs.budget_remaining is not None else obs.budget_limit - obs.budget_spent
         ratio = remaining / obs.budget_limit if obs.budget_limit else 1
-        bcol = "#f85149" if ratio < 0.2 else "#d29922" if ratio < 0.5 else "#34d399"
+        bcol = "#ff6b6b" if ratio < 0.2 else "#ff9f0a" if ratio < 0.5 else "#34d399"
         lines.append(f'<span style="color:{bcol};font-size:0.82rem;font-weight:600">Rs.{remaining:.0f} left</span>')
     lines.append("</div>")
 
@@ -221,20 +270,20 @@ def _fmt_obs(obs, severity: Optional[float] = None) -> str:
 
     if not obs.action_succeeded:
         lines.append(
-            f'<div style="background:#2d0f0f;border:1px solid #6e2020;border-radius:7px;'
-            f'padding:8px 12px;margin:8px 0;color:#f85149;font-size:0.83rem">'
+            f'<div style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);border-radius:12px;'
+            f'padding:8px 12px;margin:8px 0;color:#ff6b6b;font-size:0.83rem">'
             f'<strong>ACTION FAILED:</strong> {obs.latest_clinical_event}</div>'
         )
     elif obs.latest_clinical_event:
         lines.append(
-            f'<div style="background:#0d1f3a;border:1px solid #1f4a8a;border-radius:7px;'
-            f'padding:8px 12px;margin:8px 0;color:#93c5fd;font-size:0.83rem">'
+            f'<div style="background:rgba(10,132,255,0.10);border:1px solid rgba(10,132,255,0.25);border-radius:12px;'
+            f'padding:8px 12px;margin:8px 0;color:rgba(10,132,255,0.9);font-size:0.83rem">'
             f'{obs.latest_clinical_event}</div>'
         )
     for e in obs.events:
         lines.append(
-            f'<div style="background:#2a1e00;border:1px solid #6b3500;border-radius:7px;'
-            f'padding:8px 12px;margin:6px 0;color:#fcd34d;font-size:0.83rem">{e}</div>'
+            f'<div style="background:rgba(210,153,34,0.10);border:1px solid rgba(210,153,34,0.3);border-radius:12px;'
+            f'padding:8px 12px;margin:6px 0;color:#ffd60a;font-size:0.83rem">{e}</div>'
         )
 
     if obs.vitals:
@@ -245,26 +294,26 @@ def _fmt_obs(obs, severity: Optional[float] = None) -> str:
             "mucous_membrane_color": "MM", "capillary_refill_time": "CRT", "pain_score": "Pain",
         }
         rows = "  ".join(
-            f'<span><span style="color:#8b949e;font-size:0.75rem">{icons.get(k,k)}</span> '
-            f'<b style="color:#e6edf3">{val}</b></span>'
+            f'<span><span style="color:rgba(255,255,255,0.5);font-size:0.75rem">{icons.get(k,k)}</span> '
+            f'<b style="color:#f5f5f7">{val}</b></span>'
             for k, val in v.items() if val is not None and k != "systems_checked"
         )
         lines.append(_section("Vitals", "VITALS", rows or "—"))
 
     if obs.physical_exam_findings:
-        rows = "".join(f'<div><b style="color:#8b949e">{r}:</b> {f}</div>' for r, f in obs.physical_exam_findings.items())
+        rows = "".join(f'<div><b style="color:rgba(255,255,255,0.5)">{r}:</b> {f}</div>' for r, f in obs.physical_exam_findings.items())
         lines.append(_section("Physical Exam", "EXAM", rows))
 
     if obs.lab_results:
         rows = "".join(
-            f'<div><b style="color:#8b949e">{p}:</b> {r.get("interpretation", str(r)) if isinstance(r, dict) else r}</div>'
+            f'<div><b style="color:rgba(255,255,255,0.5)">{p}:</b> {r.get("interpretation", str(r)) if isinstance(r, dict) else r}</div>'
             for p, r in obs.lab_results.items()
         )
         lines.append(_section("Lab Results", "LABS", rows))
 
     if obs.imaging_results:
         rows = "".join(
-            f'<div><b style="color:#8b949e">{k}:</b> {r.get("interpretation", str(r)) if isinstance(r, dict) else r}</div>'
+            f'<div><b style="color:rgba(255,255,255,0.5)">{k}:</b> {r.get("interpretation", str(r)) if isinstance(r, dict) else r}</div>'
             for k, r in obs.imaging_results.items()
         )
         lines.append(_section("Imaging", "IMAGING", rows))
@@ -283,7 +332,7 @@ def _fmt_obs(obs, severity: Optional[float] = None) -> str:
         for k, v in obs.monitoring_trends.items():
             c = "#f85149" if any(x in str(v) for x in ("HIGH","ACTIVE")) else \
                 "#d29922" if "moderate" in str(v).lower() else "#34d399"
-            rows.append(f'<div><b style="color:#8b949e">{k}:</b> <span style="color:{c}">{v}</span></div>')
+            rows.append(f'<div><b style="color:rgba(255,255,255,0.5)">{k}:</b> <span style="color:{c}">{v}</span></div>')
         lines.append(_section("Monitoring Trends", "TRENDS", "".join(rows)))
 
     if obs.specialist_opinion:
@@ -291,7 +340,7 @@ def _fmt_obs(obs, severity: Optional[float] = None) -> str:
 
     if obs.available_tools:
         chips = " ".join(
-            f'<code style="background:#1e293b;border:1px solid #334155;border-radius:4px;'
+            f'<code style="background:#1e293b;border:1px solid #334155;border-radius:6px;'
             f'padding:1px 7px;font-size:0.76rem;color:#7dd3fc">{t}</code>'
             for t in obs.available_tools
         )
@@ -302,11 +351,11 @@ def _fmt_obs(obs, severity: Optional[float] = None) -> str:
 
 def _fmt_history(obs) -> str:
     if not obs.action_history:
-        return '<span style="color:#6e7681;font-style:italic">No actions yet.</span>'
+        return '<span style="color:rgba(255,255,255,0.3);font-style:italic">No actions yet.</span>'
     rows = []
     for h in obs.action_history[-12:]:
-        c = "#f85149" if "[FAILED]" in h else "#3fb950"
-        rows.append(f'<div style="color:{c};padding:3px 0;border-bottom:1px solid #30363d;font-size:0.8rem">{h}</div>')
+        c = "#f85149" if "[FAILED]" in h else "#30d158"
+        rows.append(f'<div style="color:{c};padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:0.8rem">{h}</div>')
     return "\n".join(rows)
 
 
@@ -314,15 +363,15 @@ def _task_card(task_id: str) -> str:
     m = TASK_META.get(task_id, {})
     badge = _pill(m.get("badge",""), m.get("badge_color","#1e293b"), m.get("badge_text","#e2e8f0"))
     return (
-        f'<div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px;margin-top:8px">'
+        f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px;margin-top:8px">'
         f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
         f'<span style="font-size:1.6rem">{m.get("emoji","")}</span>'
-        f'<div><div style="color:#e6edf3;font-weight:700;font-size:0.92rem">{m.get("label","")}</div>'
+        f'<div><div style="color:#f5f5f7;font-weight:700;font-size:0.92rem">{m.get("label","")}</div>'
         f'<div style="margin-top:3px">{badge}</div></div></div>'
-        f'<div style="color:#8b949e;font-size:0.83rem;line-height:1.55;margin-bottom:10px">{m.get("desc","")}</div>'
-        f'<div style="background:#21262d;border-left:3px solid #58a6ff;padding:8px 10px;'
-        f'border-radius:0 5px 5px 0;color:#8b949e;font-size:0.78rem;line-height:1.5">'
-        f'<span style="color:#58a6ff;font-weight:600">Tip</span> {m.get("tip","")}</div></div>'
+        f'<div style="color:rgba(255,255,255,0.5);font-size:0.83rem;line-height:1.55;margin-bottom:10px">{m.get("desc","")}</div>'
+        f'<div style="background:rgba(10,132,255,0.08);border-left:3px solid #0a84ff;padding:8px 10px;'
+        f'border-radius:0 5px 5px 0;color:rgba(255,255,255,0.5);font-size:0.78rem;line-height:1.5">'
+        f'<span style="color:#0a84ff;font-weight:600">Tip</span> {m.get("tip","")}</div></div>'
     )
 
 
@@ -342,18 +391,18 @@ def do_reset(task_id: str):
     _state = {"obs": obs, "done": False, "score": None, "rewards": [], "step": 0}
     m = TASK_META.get(task_id, {})
     patient_html = (
-        f'<div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px">'
-        f'<div style="font-size:1rem;font-weight:700;color:#e6edf3;margin-bottom:5px">'
+        f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px">'
+        f'<div style="font-size:1rem;font-weight:700;color:#f5f5f7;margin-bottom:5px">'
         f'{m.get("emoji","🐾")} {obs.species.title()} — {obs.breed}</div>'
-        f'<div style="color:#8b949e;font-size:0.82rem;margin-bottom:10px">'
+        f'<div style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:10px">'
         f'{obs.age_years:.1f} yr &nbsp;·&nbsp; {obs.weight_kg:.1f} kg &nbsp;·&nbsp; {obs.sex}</div>'
-        f'<div style="background:#161b22;border-radius:7px;padding:10px;color:#e6edf3;'
+        f'<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;color:#f5f5f7;'
         f'font-size:0.83rem;line-height:1.6">'
-        f'<span style="color:#58a6ff;font-size:0.7rem;font-weight:700;text-transform:uppercase;'
+        f'<span style="color:#0a84ff;font-size:0.7rem;font-weight:700;text-transform:uppercase;'
         f'letter-spacing:0.08em">Presenting Complaint</span><br>{obs.presenting_complaint}</div></div>'
     )
     status_html = (
-        '<div style="background:#0f2a1a;border:1px solid #1a4a2e;border-radius:8px;'
+        '<div style="background:rgba(48,209,88,0.2);border:1px solid #1a4a2e;border-radius:12px;'
         'padding:12px;color:#86efac;font-size:0.85rem">'
         '<b>Episode started.</b> Select a tool and take your first action.</div>'
     )
@@ -397,14 +446,14 @@ def do_step(tool: str, params_str: str, reasoning: str):
     _state["rewards"].append(reward.value)
     _state["step"] += 1
 
-    rc = "#3fb950" if reward.value >= 0 else "#f85149"
+    rc = "#30d158" if reward.value >= 0 else "#f85149"
     status_html = (
-        f'<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px">'
+        f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:12px">'
         f'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px">'
-        f'<span style="color:#8b949e;font-size:0.82rem">Step <b style="color:#e6edf3">{_state["step"]}</b></span>'
-        f'<span style="color:#8b949e;font-size:0.82rem">Tool: <code style="color:#7dd3fc">{tool}</code></span>'
+        f'<span style="color:rgba(255,255,255,0.5);font-size:0.82rem">Step <b style="color:#f5f5f7">{_state["step"]}</b></span>'
+        f'<span style="color:rgba(255,255,255,0.5);font-size:0.82rem">Tool: <code style="color:#7dd3fc">{tool}</code></span>'
         f'<span style="color:{rc};font-weight:700;font-size:1rem">{reward.value:+.3f}</span></div>'
-        f'<div style="color:#8b949e;font-size:0.8rem;font-style:italic">{reward.message}</div></div>'
+        f'<div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-style:italic">{reward.message}</div></div>'
     )
 
     if done:
@@ -413,18 +462,18 @@ def do_step(tool: str, params_str: str, reasoning: str):
         passed = info.get("passed", False)
         feedback = info.get("grade_feedback", [])
         _state["score"] = grade
-        gc = "#3fb950" if grade >= 0.7 else "#d29922" if grade >= 0.5 else "#f85149"
+        gc = "#30d158" if grade >= 0.7 else "#ff9f0a" if grade >= 0.5 else "#f85149"
         pass_badge = (
-            '<span style="background:#0f2a1a;color:#86efac;border-radius:5px;padding:2px 10px;font-weight:700">PASSED</span>'
+            '<span style="background:rgba(48,209,88,0.2);color:#86efac;border-radius:8px;padding:2px 10px;font-weight:700">PASSED</span>'
             if passed else
-            '<span style="background:#2d0f0f;color:#f85149;border-radius:5px;padding:2px 10px;font-weight:700">FAILED</span>'
+            '<span style="background:rgba(248,81,73,0.15);color:#ff6b6b;border-radius:8px;padding:2px 10px;font-weight:700">FAILED</span>'
         )
-        fb_rows = "".join(f'<li style="color:#8b949e;font-size:0.82rem;margin:3px 0">{f}</li>' for f in feedback)
+        fb_rows = "".join(f'<li style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin:3px 0">{f}</li>' for f in feedback)
         status_html = (
-            f'<div style="background:#161b22;border:1px solid {gc}44;border-radius:10px;padding:16px">'
+            f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:16px">'
             f'<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">'
             f'<div style="font-size:2.4rem;font-weight:900;color:{gc}">{grade:.3f}</div>'
-            f'<div><div style="color:#8b949e;font-size:0.78rem;margin-bottom:4px">Final Score</div>{pass_badge}</div></div>'
+            f'<div><div style="color:rgba(255,255,255,0.5);font-size:0.78rem;margin-bottom:4px">Final Score</div>{pass_badge}</div></div>'
             f'<ul style="padding-left:16px;margin:0">{fb_rows}</ul></div>'
         )
         return (_fmt_obs(obs, severity), _fmt_history(obs), status_html, gr.update(interactive=False))
@@ -463,7 +512,7 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
     api_key = token.strip() or os.getenv("HF_TOKEN") or ""
     if not api_key:
         return (
-            '<div style="background:#2d0f0f;border:1px solid #6e2020;border-radius:8px;padding:14px;color:#f85149">'
+            '<div style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);border-radius:12px;padding:14px;color:#f85149">'
             'No HF Token provided. Enter it above or set the HF_TOKEN Space secret.</div>'
         )
 
@@ -518,11 +567,11 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
             )
             hint = "Try: mistralai/Mistral-7B-Instruct-v0.3 or Qwen/Qwen2.5-7B-Instruct" if "400" in llm_error else "Check your token or endpoint."
             return (
-                f'<div style="background:#2d0f0f;border:1px solid #6e2020;border-radius:10px;padding:16px">'
+                f'<div style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);border-radius:14px;padding:16px">'
                 f'<div style="color:#f85149;font-weight:700;margin-bottom:6px">{label}</div>'
                 f'<div style="color:#f85149;font-size:0.82rem;margin-bottom:8px">Stopped after {len(rewards)} steps.</div>'
                 f'<code style="font-size:0.76rem;color:#f85149;word-break:break-all">{llm_error[:300]}</code>'
-                f'<div style="margin-top:10px;color:#8b949e;font-size:0.8rem">{hint}</div></div>'
+                f'<div style="margin-top:10px;color:rgba(255,255,255,0.5);font-size:0.8rem">{hint}</div></div>'
             )
 
         action = Action(tool=tool, parameters=params, reasoning=reasoning)
@@ -531,14 +580,14 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
         history.append(f"Step {step}: {tool} -> {reward.value:+.2f}")
 
         fail_tag = ' <span style="color:#f85149;font-size:0.72rem">FAIL</span>' if not obs.action_succeeded else ""
-        rc = "#3fb950" if reward.value >= 0 else "#f85149"
+        rc = "#30d158" if reward.value >= 0 else "#f85149"
         row_bg = "#1a0000" if not obs.action_succeeded else ("#071a07" if reward.value > 0 else "transparent")
         log_rows.append(
-            f'<tr style="background:{row_bg};border-bottom:1px solid #1e293b">'
-            f'<td style="padding:5px 8px;color:#8b949e;font-size:0.78rem">{step}</td>'
+            f'<tr style="background:{row_bg};border-bottom:1px solid rgba(255,255,255,0.06)">'
+            f'<td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-size:0.78rem">{step}</td>'
             f'<td style="padding:5px 8px;color:#7dd3fc;font-family:monospace;font-size:0.78rem">{tool}{fail_tag}</td>'
             f'<td style="padding:5px 8px;color:{rc};font-weight:700;font-size:0.78rem">{reward.value:+.3f}</td>'
-            f'<td style="padding:5px 8px;color:#8b949e;font-size:0.74rem">{str(reasoning)[:55]}</td>'
+            f'<td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-size:0.74rem">{str(reasoning)[:55]}</td>'
             f'</tr>'
         )
         if done:
@@ -546,35 +595,35 @@ def run_llm_episode(task_id: str, base_url: str, model: str, token: str) -> str:
             passed = info.get("passed", False)
             break
 
-    gc = "#3fb950" if score >= 0.7 else "#d29922" if score >= 0.5 else "#f85149"
+    gc = "#30d158" if score >= 0.7 else "#ff9f0a" if score >= 0.5 else "#f85149"
     pass_html = (
-        '<span style="background:#0f2a1a;color:#86efac;border-radius:5px;padding:2px 9px;font-weight:700">PASSED</span>'
+        '<span style="background:rgba(48,209,88,0.2);color:#86efac;border-radius:8px;padding:2px 9px;font-weight:700">PASSED</span>'
         if passed else
-        '<span style="background:#2d0f0f;color:#f85149;border-radius:5px;padding:2px 9px;font-weight:700">FAILED</span>'
+        '<span style="background:rgba(248,81,73,0.15);color:#ff6b6b;border-radius:8px;padding:2px 9px;font-weight:700">FAILED</span>'
     )
     total_rew = sum(rewards)
-    rew_c = "#3fb950" if total_rew >= 0 else "#f85149"
+    rew_c = "#30d158" if total_rew >= 0 else "#f85149"
 
     return f"""
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px">
-      <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;flex-wrap:wrap;border-bottom:1px solid #1e293b;padding-bottom:14px">
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:16px">
+      <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:14px">
         <div>
           <div style="font-size:2.2rem;font-weight:900;color:{gc};line-height:1">{score:.3f}</div>
-          <div style="color:#8b949e;font-size:0.74rem;margin-top:2px">Final Score</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:0.74rem;margin-top:2px">Final Score</div>
         </div>
-        <div>{pass_html}<div style="color:#8b949e;font-size:0.74rem;margin-top:4px">{len(rewards)} steps &nbsp;&middot;&nbsp; {model.split('/')[-1]}</div></div>
+        <div>{pass_html}<div style="color:rgba(255,255,255,0.5);font-size:0.74rem;margin-top:4px">{len(rewards)} steps &nbsp;&middot;&nbsp; {model.split('/')[-1]}</div></div>
         <div style="margin-left:auto;text-align:right">
           <div style="color:{rew_c};font-weight:700">{total_rew:+.2f}</div>
-          <div style="color:#8b949e;font-size:0.74rem">cumulative reward</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:0.74rem">cumulative reward</div>
         </div>
       </div>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:#161b22">
-            <th style="padding:6px 8px;color:#58a6ff;text-align:left;font-size:0.74rem">#</th>
-            <th style="padding:6px 8px;color:#58a6ff;text-align:left;font-size:0.74rem">Tool</th>
-            <th style="padding:6px 8px;color:#58a6ff;text-align:left;font-size:0.74rem">Reward</th>
-            <th style="padding:6px 8px;color:#58a6ff;text-align:left;font-size:0.74rem">Reasoning</th>
+          <thead><tr style="background:rgba(255,255,255,0.04)">
+            <th style="padding:6px 8px;color:#0a84ff;text-align:left;font-size:0.74rem">#</th>
+            <th style="padding:6px 8px;color:#0a84ff;text-align:left;font-size:0.74rem">Tool</th>
+            <th style="padding:6px 8px;color:#0a84ff;text-align:left;font-size:0.74rem">Reward</th>
+            <th style="padding:6px 8px;color:#0a84ff;text-align:left;font-size:0.74rem">Reasoning</th>
           </tr></thead>
           <tbody>{"".join(log_rows)}</tbody>
         </table>
@@ -611,24 +660,24 @@ def build_ui() -> gr.Blocks:
                         task_card_html = gr.HTML(_task_card(default_task))
                         start_btn = gr.Button("Start Episode", elem_id="start-btn", size="lg")
                         gr.HTML('<hr style="border-color:#1e293b;margin:14px 0">')
-                        gr.HTML('<p style="color:#8b949e;font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 6px">Patient</p>')
-                        patient_html = gr.HTML('<div style="color:#6e7681;font-size:0.82rem;font-style:italic">Start an episode to see patient details.</div>')
+                        gr.HTML('<p style="color:rgba(255,255,255,0.5);font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 6px">Patient</p>')
+                        patient_html = gr.HTML('<div style="color:rgba(255,255,255,0.3);font-size:0.82rem;font-style:italic">Start an episode to see patient details.</div>')
 
                     with gr.Column(scale=2):
                         with gr.Tabs():
                             with gr.Tab("Observation"):
                                 obs_html = gr.HTML(
-                                    '<div style="color:#6e7681;font-style:italic;font-size:0.85rem;padding:12px">Start an episode to see the clinical picture.</div>',
+                                    '<div style="color:rgba(255,255,255,0.3);font-style:italic;font-size:0.85rem;padding:12px">Start an episode to see the clinical picture.</div>',
                                     elem_id="obs-panel",
                                 )
                             with gr.Tab("Action History"):
                                 history_html = gr.HTML(
-                                    '<div style="color:#6e7681;font-style:italic;padding:12px;font-family:monospace">No actions yet.</div>',
+                                    '<div style="color:rgba(255,255,255,0.3);font-style:italic;padding:12px;font-family:monospace">No actions yet.</div>',
                                     elem_id="history-panel",
                                 )
 
                 gr.HTML('<hr style="border-color:#1e293b;margin:16px 0">')
-                gr.HTML('<p style="color:#8b949e;font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px">Take an Action</p>')
+                gr.HTML('<p style="color:rgba(255,255,255,0.5);font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px">Take an Action</p>')
 
                 with gr.Row():
                     with gr.Column(scale=3):
@@ -639,16 +688,16 @@ def build_ui() -> gr.Blocks:
                     with gr.Column(scale=1, min_width=160):
                         step_btn = gr.Button("Take Action", elem_id="step-btn", size="lg", interactive=False)
                         status_html = gr.HTML(
-                            '<div style="color:#6e7681;font-style:italic;font-size:0.82rem;margin-top:8px">Results appear here after each action.</div>',
+                            '<div style="color:rgba(255,255,255,0.3);font-style:italic;font-size:0.82rem;margin-top:8px">Results appear here after each action.</div>',
                             elem_id="status-panel",
                         )
 
             # ── Tab 2: LLM Auto-Play ─────────────────────────────────────────
             with gr.Tab("LLM Auto-Play"):
                 gr.HTML("""
-                <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px">
+                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:16px;margin-bottom:16px">
                   <div style="color:#a5b4fc;font-weight:700;font-size:0.95rem;margin-bottom:6px">Run a full episode with an LLM</div>
-                  <div style="color:#8b949e;font-size:0.83rem;line-height:1.6">
+                  <div style="color:rgba(255,255,255,0.5);font-size:0.83rem;line-height:1.6">
                     Connects to any OpenAI-compatible endpoint and plays the selected task automatically.
                     Results show per-step rewards, failure flags, and a final grade.
                   </div>
@@ -661,9 +710,9 @@ def build_ui() -> gr.Blocks:
                         llm_model    = gr.Textbox(value=os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct"), label="Model Name")
                         llm_token    = gr.Textbox(value="", label="HF Token (leave blank to use Space secret)", type="password")
                         gr.HTML("""
-                        <div style="background:#161b22;border-radius:7px;padding:10px;margin-top:4px">
-                          <div style="color:#8b949e;font-size:0.74rem;font-weight:700;margin-bottom:4px">Free model suggestions</div>
-                          <div style="color:#8b949e;font-size:0.76rem;line-height:1.7">
+                        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;margin-top:6px">
+                          <div style="color:rgba(255,255,255,0.5);font-size:0.74rem;font-weight:700;margin-bottom:4px">Free model suggestions</div>
+                          <div style="color:rgba(255,255,255,0.5);font-size:0.76rem;line-height:1.7">
                             Qwen/Qwen2.5-7B-Instruct &nbsp;&middot;&nbsp;
                             mistralai/Mistral-7B-Instruct-v0.3 &nbsp;&middot;&nbsp;
                             meta-llama/Llama-3.1-8B-Instruct
@@ -672,7 +721,7 @@ def build_ui() -> gr.Blocks:
                         """)
                     with gr.Column(scale=1):
                         autoplay_btn = gr.Button("Run LLM Episode", elem_id="llm-btn", size="lg")
-                        autoplay_status = gr.HTML('<div style="color:#6e7681;font-style:italic;font-size:0.82rem;margin-top:8px">Results will appear here.</div>')
+                        autoplay_status = gr.HTML('<div style="color:rgba(255,255,255,0.3);font-style:italic;font-size:0.82rem;margin-top:8px">Results will appear here.</div>')
 
         gr.HTML("""
         <div style="text-align:center;color:#1e293b;font-size:0.72rem;margin-top:20px;padding:10px 0;border-top:1px solid #0f172a">
